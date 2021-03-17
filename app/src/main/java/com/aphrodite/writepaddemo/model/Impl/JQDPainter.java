@@ -4,24 +4,25 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.pdf.PdfDocument;
+import android.print.PrintAttributes;
 import android.text.TextUtils;
 
-import com.aphrodite.framework.utils.FileUtils;
-import com.aphrodite.framework.utils.UIUtils;
-import com.aphrodite.writepaddemo.config.AppConfig;
 import com.aphrodite.writepaddemo.model.api.IBasePathDerive;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
 import com.aphrodite.writepaddemo.model.ffmpeg.FFmpegTask;
 import com.aphrodite.writepaddemo.model.ffmpeg.ffmpegListener;
 import com.aphrodite.writepaddemo.utils.BitmapUtils;
 import com.aphrodite.writepaddemo.utils.FFmpegUtils;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.PageSize;
+import com.aphrodite.writepaddemo.utils.FileUtils;
+import com.aphrodite.writepaddemo.utils.UIUtils;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,9 @@ import cn.ugee.mi.optimize.UgeePoint;
  */
 public class JQDPainter implements IBasePathDerive {
     private static final String TAG = JQDPainter.class.getSimpleName();
+    //1英寸=25.4毫米
+    private static final float UNIT_PER_INCH = (float) 25.4;
+
     private Context mContext;
     private static JQDPainter mInstance = null;
     private boolean mIsGetImage = true;
@@ -190,7 +194,7 @@ public class JQDPainter implements IBasePathDerive {
         }
         initCanvas();
         drawPath(mUgeePoints);
-        createPdf(realPath);
+        nativeCreatePdf(mBitmap, realPath);
     }
 
     private void drawPath(List<UgeePoint> ugeePoints) {
@@ -232,7 +236,7 @@ public class JQDPainter implements IBasePathDerive {
                     num++;
                     if (num >= pointsPerFrame) {
                         pictureAbsPath = new StringBuilder();
-                        pictureAbsPath.append(index).append(AppConfig.IMAGE_SUFFIX);
+                        pictureAbsPath.append(index).append(".jpg");
                         saveImage(mBitmap, mTempImagePath, pictureAbsPath.toString(), Bitmap.CompressFormat.JPEG, 100);
                         num = 0;
                         index++;
@@ -311,16 +315,43 @@ public class JQDPainter implements IBasePathDerive {
         });
     }
 
-    private void createPdf(String filename) {
-        PdfImpl pdf = new PdfImpl.Builder(filename, PageSize.A4).build();
+    private void nativeCreatePdf(Bitmap bitmap, String filename) {
+        if (null == mContext || null == bitmap || TextUtils.isEmpty(filename)) {
+            return;
+        }
+        int densityDpi = mContext.getResources().getDisplayMetrics().densityDpi;
+        float pageWidth = PrintAttributes.MediaSize.ISO_A4.getWidthMils() * densityDpi / UNIT_PER_INCH;
+        float scale = pageWidth / bitmap.getWidth();
+        float pageHeight = scale * bitmap.getHeight();
+
+        PdfDocument doc = new PdfDocument();
+        Matrix matrix = new Matrix();
+        matrix.postScale(scale, scale);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        PdfDocument.PageInfo newPage = new PdfDocument.PageInfo.Builder((int) pageWidth, (int) pageHeight, 0).create();
+        PdfDocument.Page page = doc.startPage(newPage);
+        Canvas canvas = page.getCanvas();
+        canvas.drawBitmap(bitmap, matrix, paint);
+        doc.finishPage(page);
+
+        File saveFile = new File(filename);
+        FileOutputStream outputStream = null;
         try {
-            pdf.init().addImageToPdf(mBitmap, Element.ALIGN_CENTER);
+            outputStream = new FileOutputStream(saveFile);
+            doc.writeTo(outputStream);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (DocumentException e) {
-            e.printStackTrace();
         } finally {
-            pdf.close();
+            try {
+                outputStream.flush();
+                outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            doc.close();
         }
     }
 

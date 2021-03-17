@@ -11,7 +11,6 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.aphrodite.framework.utils.PathUtils;
 import com.aphrodite.writepaddemo.R;
 import com.aphrodite.writepaddemo.config.AppConfig;
 import com.aphrodite.writepaddemo.model.Impl.JQDPainter;
@@ -21,10 +20,6 @@ import com.aphrodite.writepaddemo.model.bean.PointsBean;
 import com.aphrodite.writepaddemo.view.base.BaseActivity;
 import com.aphrodite.writepaddemo.view.widget.view.JQDCanvas;
 import com.google.gson.Gson;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.pdf.BaseFont;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -83,6 +78,9 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mUndo = findViewById(R.id.undo);
         mSaveImage = findViewById(R.id.save_image);
         mContent = findViewById(R.id.content);
+
+        DisplayMetrics dm = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(dm);
     }
 
     @Override
@@ -97,7 +95,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     @Override
     protected void initData() {
         //路径：/storage/emulated/0/Android/data/com.aphrodite.writepaddemo/files/，注：米家插件则为沙盒目录
-        mRootPath = PathUtils.getExternalFileDir(this) + "/202103051536/";
+        mRootPath = "/storage/emulated/0/Android/data/com.aphrodite.writepaddemo/files/202103051536/";
         mGson = new Gson();
         //JQDCanvas设置
         mJQDCanvas.init(mRootPath);
@@ -249,21 +247,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             e.printStackTrace();
         }
         return null;
-    }
-
-
-    private Font setFont(int size, int style, BaseColor color) {
-        BaseFont baseFont = null;
-        Font font = null;
-        try {
-            baseFont = BaseFont.createFont("assets/fonts/simsun.ttc,1", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-            font = new Font(baseFont, size, style, color);
-        } catch (DocumentException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return font;
     }
 
     private float getDensity() {

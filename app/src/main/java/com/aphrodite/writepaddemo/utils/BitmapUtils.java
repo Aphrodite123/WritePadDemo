@@ -11,9 +11,6 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.aphrodite.framework.utils.PathUtils;
-import com.aphrodite.writepaddemo.config.AppConfig;
-
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -96,47 +93,6 @@ public class BitmapUtils {
     public static boolean deleteTextFile(String filePath) {
         File file = new File(filePath);
         return file.exists() && file.delete();
-    }
-
-    /**
-     * 将Bitmap保存到本地路径
-     *
-     * @param bitmap
-     * @param absolutePath
-     * @param format
-     * @param quality
-     * @throws IOException
-     */
-    public static String saveBitmap(Bitmap bitmap, String absolutePath, Bitmap.CompressFormat format, int quality) throws IOException {
-        if (null == bitmap || TextUtils.isEmpty(absolutePath)) {
-            return null;
-        }
-        String path = absolutePath.substring(0, absolutePath.lastIndexOf(File.separator) + 1);
-        File file = new File(path);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-        String resFileName = PathUtils.getFileNameFromUrl(absolutePath);
-        String curFileName = null;
-        if (TextUtils.isEmpty(resFileName)) {
-            curFileName = System.currentTimeMillis() + AppConfig.POINT + format.name();
-        } else {
-            curFileName = resFileName;
-        }
-        File saveFile = new File(path, curFileName);
-        if (!saveFile.exists()) {
-            saveFile.createNewFile();
-        } else {
-            if (saveFile.delete()) {
-                saveFile.createNewFile();
-            }
-        }
-
-        BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(saveFile));
-        bitmap.compress(format, quality, outputStream);
-        outputStream.flush();
-        outputStream.close();
-        return path + curFileName;
     }
 
     /**

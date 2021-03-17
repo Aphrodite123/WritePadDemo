@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
@@ -14,11 +15,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.aphrodite.framework.utils.ObjectUtils;
-import com.aphrodite.framework.utils.UIUtils;
-import com.aphrodite.framework.view.manager.ActivitysManager;
-import com.aphrodite.framework.view.widget.dialog.LoadingDialog;
 import com.aphrodite.writepaddemo.R;
+import com.aphrodite.writepaddemo.utils.UIUtils;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,9 +28,6 @@ import androidx.core.content.ContextCompat;
  * Created by Aphrodite on 2019/5/20.
  */
 public abstract class BaseActivity extends AppCompatActivity {
-    private ActivitysManager mActivityManager;
-    private LoadingDialog mLoadingDialog;
-
     /**
      * Toolbar
      */
@@ -69,25 +64,16 @@ public abstract class BaseActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (null == mActivityManager) {
-            mActivityManager = ActivitysManager.getInstance();
-        }
-        mActivityManager.addActivity(this);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        dismissLoadingDialog();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (null != mActivityManager) {
-            mActivityManager.finishActivity(this);
-            mActivityManager = null;
-        }
     }
 
     protected abstract int getViewId();
@@ -112,7 +98,7 @@ public abstract class BaseActivity extends AppCompatActivity {
      * @param activity
      */
     protected void setStatusBarColor(Activity activity) {
-        if (ObjectUtils.isEmpty(activity)) {
+        if (null == activity) {
             return;
         }
 
@@ -168,26 +154,6 @@ public abstract class BaseActivity extends AppCompatActivity {
 
     public void hideKeyBoard() {
         UIUtils.closeSoftKeyboard(this);
-    }
-
-    public void showLoadingDialog() {
-        if (null == mLoadingDialog) {
-            mLoadingDialog = new LoadingDialog(this, R.style.dialog_loading, R.drawable.loading_animation);
-        }
-
-        if (!mLoadingDialog.isShowing()) {
-            mLoadingDialog.show();
-        }
-    }
-
-    public void dismissLoadingDialog() {
-        if (null == mLoadingDialog) {
-            return;
-        }
-
-        if (mLoadingDialog.isShowing()) {
-            mLoadingDialog.dismiss();
-        }
     }
 
     private void initToolbar() {
@@ -296,7 +262,7 @@ public abstract class BaseActivity extends AppCompatActivity {
             return;
         }
 
-        if (ObjectUtils.isEmpty(text)) {
+        if (TextUtils.isEmpty(text)) {
             mDateText.setVisibility(View.GONE);
             return;
         }
@@ -311,13 +277,6 @@ public abstract class BaseActivity extends AppCompatActivity {
      * @param textId
      */
     protected void setDateText(int textId) {
-        if (ObjectUtils.isEmpty(textId)) {
-            if (mDateText != null) {
-                mDateText.setVisibility(View.GONE);
-            }
-            return;
-        }
-
         if (mDateText != null) {
             mDateText.setText(textId);
             mDateText.setVisibility(View.VISIBLE);
@@ -450,7 +409,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     @TargetApi(Build.VERSION_CODES.M)
     protected boolean hasPermission(String[] permissions) {
         boolean hasPermission = true;
-        if (ObjectUtils.isEmpty(permissions)) {
+        if (null == permissions || permissions.length <= 0) {
             return true;
         }
 

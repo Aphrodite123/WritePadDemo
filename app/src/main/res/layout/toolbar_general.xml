@@ -2,18 +2,18 @@
 <androidx.appcompat.widget.Toolbar xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/toolbar"
     android:layout_width="match_parent"
-    android:layout_height="@dimen/dip48">
+    android:layout_height="48dp">
 
     <ImageView
         android:id="@+id/iv_left_btn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="left"
-        android:layout_marginLeft="@dimen/dip10"
+        android:layout_marginLeft="10dp"
         android:background="?android:attr/selectableItemBackground"
         android:clickable="true"
         android:onClick="clickBack"
-        android:padding="@dimen/dip10"
+        android:padding="10dp"
         android:scaleType="center"
         android:visibility="gone" />
 
@@ -22,16 +22,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="left|center_vertical"
-        android:layout_marginLeft="@dimen/dip12"
+        android:layout_marginLeft="12dp"
         android:background="?android:attr/selectableItemBackground"
         android:gravity="center_vertical"
         android:onClick="clickLeftText"
-        android:paddingLeft="@dimen/dip10"
-        android:paddingTop="@dimen/dip7"
-        android:paddingRight="@dimen/dip10"
-        android:paddingBottom="@dimen/dip7"
+        android:paddingLeft="10dp"
+        android:paddingTop="7dp"
+        android:paddingRight="10dp"
+        android:paddingBottom="7dp"
         android:textColor="@android:color/white"
-        android:textSize="@dimen/font12"
+        android:textSize="12sp"
         android:visibility="gone" />
 
     <ImageView
@@ -39,11 +39,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="left"
-        android:layout_marginLeft="@dimen/dip10"
+        android:layout_marginLeft="10dp"
         android:background="?android:attr/selectableItemBackground"
         android:clickable="true"
         android:onClick="closePageEvent"
-        android:padding="@dimen/dip10"
+        android:padding="10dp"
         android:scaleType="center"
         android:visibility="gone" />
 
@@ -66,7 +66,7 @@
             android:marqueeRepeatLimit="marquee_forever"
             android:maxWidth="150dp"
             android:textColor="@android:color/white"
-            android:textSize="@dimen/font16"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <TextView
@@ -79,7 +79,7 @@
             android:marqueeRepeatLimit="marquee_forever"
             android:maxWidth="150dp"
             android:textColor="@android:color/white"
-            android:textSize="@dimen/font10"
+            android:textSize="10sp"
             android:textStyle="bold"
             android:visibility="gone" />
 
@@ -90,11 +90,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="right"
-        android:layout_marginLeft="@dimen/dip10"
-        android:layout_marginRight="@dimen/dip10"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
         android:background="?android:attr/selectableItemBackground"
         android:onClick="clickRightBtn"
-        android:padding="@dimen/dip10"
+        android:padding="10dp"
         android:scaleType="center"
         android:visibility="gone" />
 
@@ -105,7 +105,7 @@
         android:layout_gravity="right"
         android:background="?android:attr/selectableItemBackground"
         android:onClick="onRightSecond"
-        android:padding="@dimen/dip10"
+        android:padding="10dp"
         android:scaleType="center"
         android:visibility="gone" />
 
@@ -114,18 +114,18 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="right|center_vertical"
-        android:layout_marginLeft="@dimen/dip12"
-        android:layout_marginRight="@dimen/dip10"
+        android:layout_marginLeft="12dp"
+        android:layout_marginRight="10dp"
         android:background="?android:attr/selectableItemBackground"
         android:clickable="true"
-        android:drawablePadding="@dimen/dip5"
+        android:drawablePadding="5dp"
         android:gravity="center_vertical"
         android:onClick="clickRightText"
-        android:paddingLeft="@dimen/dip10"
-        android:paddingTop="@dimen/dip7"
-        android:paddingRight="@dimen/dip10"
-        android:paddingBottom="@dimen/dip7"
+        android:paddingLeft="10dp"
+        android:paddingTop="7dp"
+        android:paddingRight="10dp"
+        android:paddingBottom="7dp"
         android:textColor="@android:color/white"
-        android:textSize="@dimen/font12"
+        android:textSize="12sp"
         android:visibility="gone" />
 </androidx.appcompat.widget.Toolbar>

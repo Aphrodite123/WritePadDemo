@@ -11,11 +11,11 @@ import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
 
-import com.aphrodite.framework.utils.FileUtils;
-import com.aphrodite.framework.utils.UIUtils;
 import com.aphrodite.writepaddemo.model.Impl.JQDPainter;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
 import com.aphrodite.writepaddemo.utils.BitmapUtils;
+import com.aphrodite.writepaddemo.utils.FileUtils;
+import com.aphrodite.writepaddemo.utils.UIUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -134,10 +134,12 @@ public class JQDCanvas extends View {
             return;
         }
         initCanvas();
+        if (mUgeePoint.pressure > 0 && ugeePoint.pressure <= 0) {
+            saveBitmap();
+        }
         if (mUgeePoint.pressure <= 0 && ugeePoint.pressure > 0) {
             mPath.moveTo(mUgeePoint.x * mViewScale, mUgeePoint.y * mViewScale);
         }
-
         if (mUgeePoint.pressure > 0 && ugeePoint.pressure > 0) {
             if (null != mPaint) {
                 mPaint.setStrokeWidth(lineWidth * calPressureScale(ugeePoint.pressure));
@@ -147,11 +149,6 @@ public class JQDCanvas extends View {
             drawPath(new float[]{mUgeePoint.x * scale, mUgeePoint.y * scale, ugeePoint.x * scale, ugeePoint.y * scale}, mCanvas, mPaint);
             invalidate();
         }
-
-        if (mUgeePoint.pressure > 0 && ugeePoint.pressure <= 0) {
-            saveBitmap();
-        }
-
         if (mUgeePoint.pressure <= 0 && ugeePoint.pressure <= 0) {
             if (null != mPath) {
                 mPath.reset();
