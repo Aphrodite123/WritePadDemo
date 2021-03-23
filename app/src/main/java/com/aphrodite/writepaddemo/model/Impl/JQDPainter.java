@@ -13,8 +13,6 @@ import android.text.TextUtils;
 
 import com.aphrodite.writepaddemo.model.api.IBasePathDerive;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
-import com.aphrodite.writepaddemo.model.ffmpeg.FFmpegTask;
-import com.aphrodite.writepaddemo.model.ffmpeg.ffmpegListener;
 import com.aphrodite.writepaddemo.utils.BitmapUtils;
 import com.aphrodite.writepaddemo.utils.FFmpegUtils;
 import com.aphrodite.writepaddemo.utils.FileUtils;
@@ -28,6 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cn.ugee.mi.optimize.UgeePoint;
+import io.microshow.rxffmpeg.RxFFmpegInvoke;
+import io.microshow.rxffmpeg.RxFFmpegSubscriber;
 
 /**
  * Created by Aphrodite on 2021/3/3.
@@ -300,19 +300,32 @@ public class JQDPainter implements IBasePathDerive {
     private void imageToVideo(String srcPath, String fileName) {
         int frameRate = 10;// 合成视频帧率建议:1-10  普通视频帧率一般为25
         String[] commandLine = FFmpegUtils.pictureToVideo(srcPath, frameRate, fileName);
-        FFmpegTask.execute(commandLine, new ffmpegListener() {
-            @Override
-            public void onBegin() {
+        RxFFmpegInvoke.getInstance()
+                .runCommandRxJava(commandLine)
+                .subscribe(new RxFFmpegSubscriber() {
+                    @Override
+                    public void onFinish() {
+                        if (null != mCallBack) {
+                            mCallBack.success(fileName);
+                        }
+                    }
 
-            }
+                    @Override
+                    public void onProgress(int progress, long progressTime) {
+                    }
 
-            @Override
-            public void onEnd(int resultCode, String resultMsg) {
-                if (null != mCallBack) {
-                    mCallBack.success(fileName);
-                }
-            }
-        });
+                    @Override
+                    public void onCancel() {
+
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        if (null != mCallBack) {
+                            mCallBack.failed(Error.ERROR_THREE);
+                        }
+                    }
+                });
     }
 
     private void nativeCreatePdf(Bitmap bitmap, String filename) {

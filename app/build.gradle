@@ -23,12 +23,6 @@ android {
         }
     }
 
-    externalNativeBuild {
-        cmake {
-            path "CMakeLists.txt"
-        }
-    }
-
     sourceSets {
         main {
             jniLibs.srcDirs = ['libs']
@@ -66,4 +60,5 @@ dependencies {
 
     implementation(name: 'ugee_optimize', ext: 'aar')
     implementation 'com.google.code.gson:gson:2.8.5'
+    implementation 'com.github.microshow:RxFFmpeg:4.9.0-lite'
 }

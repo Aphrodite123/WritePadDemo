@@ -33,6 +33,7 @@ import java.util.List;
 import androidx.annotation.NonNull;
 import cn.ugee.mi.optimize.UgeePenOptimizeClass;
 import cn.ugee.mi.optimize.UgeePoint;
+import io.microshow.rxffmpeg.RxFFmpegInvoke;
 
 public class MainActivity extends BaseActivity implements View.OnClickListener {
     private LinearLayout mRoot;
@@ -94,6 +95,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     @Override
     protected void initData() {
+        RxFFmpegInvoke.getInstance().setDebug(false);
+
         //路径：/storage/emulated/0/Android/data/com.aphrodite.writepaddemo/files/，注：米家插件则为沙盒目录
         mRootPath = "/storage/emulated/0/Android/data/com.aphrodite.writepaddemo/files/202103051536/";
         mGson = new Gson();
@@ -103,7 +106,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         //文件设置
         if (!hasPermission(mPermissions)) {
             requestPermission(mPermissions, AppConfig.PermissionType.CAMERA_PERMISSION);
-            return;
         }
         createFile();
         //JQDPainter设置
