@@ -13,8 +13,8 @@ import android.text.TextUtils;
 
 import com.aphrodite.writepaddemo.model.api.IBasePathDerive;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
+import com.aphrodite.writepaddemo.model.provider.BitmapProvider;
 import com.aphrodite.writepaddemo.utils.BitmapUtils;
-import com.aphrodite.writepaddemo.utils.FFmpegUtils;
 import com.aphrodite.writepaddemo.utils.FileUtils;
 import com.aphrodite.writepaddemo.utils.UIUtils;
 
@@ -26,8 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import cn.ugee.mi.optimize.UgeePoint;
-import io.microshow.rxffmpeg.RxFFmpegInvoke;
-import io.microshow.rxffmpeg.RxFFmpegSubscriber;
+import xyz.mylib.creator.handler.CreatorExecuteResponseHander;
+import xyz.mylib.creator.task.AvcExecuteAsyncTask;
 
 /**
  * Created by Aphrodite on 2021/3/3.
@@ -298,34 +298,36 @@ public class JQDPainter implements IBasePathDerive {
      * @param fileName
      */
     private void imageToVideo(String srcPath, String fileName) {
-        int frameRate = 10;// 合成视频帧率建议:1-10  普通视频帧率一般为25
-        String[] commandLine = FFmpegUtils.pictureToVideo(srcPath, frameRate, fileName);
-        RxFFmpegInvoke.getInstance()
-                .runCommandRxJava(commandLine)
-                .subscribe(new RxFFmpegSubscriber() {
-                    @Override
-                    public void onFinish() {
-                        if (null != mCallBack) {
-                            mCallBack.success(fileName);
-                        }
-                    }
+        AvcExecuteAsyncTask.execute(new BitmapProvider(srcPath, getSize()), 16, new CreatorExecuteResponseHander() {
+            @Override
+            public void onSuccess(Object message) {
+                if (null != mCallBack) {
+                    mCallBack.success(fileName);
+                }
+            }
 
-                    @Override
-                    public void onProgress(int progress, long progressTime) {
-                    }
+            @Override
+            public void onProgress(Object message) {
 
-                    @Override
-                    public void onCancel() {
+            }
 
-                    }
+            @Override
+            public void onFailure(Object message) {
+                if (null != mCallBack) {
+                    mCallBack.failed(Error.ERROR_THREE);
+                }
+            }
 
-                    @Override
-                    public void onError(String message) {
-                        if (null != mCallBack) {
-                            mCallBack.failed(Error.ERROR_THREE);
-                        }
-                    }
-                });
+            @Override
+            public void onStart() {
+
+            }
+
+            @Override
+            public void onFinish() {
+                FileUtils.deleteFile(srcPath);
+            }
+        }, fileName);
     }
 
     private void nativeCreatePdf(Bitmap bitmap, String filename) {
@@ -366,6 +368,12 @@ public class JQDPainter implements IBasePathDerive {
             }
             doc.close();
         }
+    }
+
+    private int[] getSize() {
+        int width = (int) (scale * deviceWidth);
+        int height = (int) (scale * deviceHeight);
+        return new int[]{width, height};
     }
 
     public void addPoints(List<UgeePoint> ugeePoints) {

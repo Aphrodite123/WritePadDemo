@@ -2,6 +2,7 @@ package com.aphrodite.writepaddemo.utils;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -12,6 +13,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -158,6 +160,75 @@ public class BitmapUtils {
         canvas.drawRect(0, 0, orginBitmap.getWidth(), orginBitmap.getHeight(), paint);
         canvas.drawBitmap(orginBitmap, 0, 0, paint);
         return bitmap;
+    }
+
+    /**
+     * 根据文件名获取图片,并进行压缩
+     *
+     * @param pathName
+     * @param width
+     * @param height
+     * @return
+     */
+    public static Bitmap decodeSampleBitmapFromResource(String pathName, int width, int height) {
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(pathName, opts);
+        int inSampleSize = calculateInSampleSize(opts, width, height);
+        opts.inSampleSize = inSampleSize;
+        opts.inJustDecodeBounds = false;
+        Bitmap bitmap = BitmapFactory.decodeFile(pathName, opts);
+        return bitmap;
+    }
+
+    /**
+     * 计算缩放比例
+     *
+     * @param opts
+     * @param width
+     * @param height
+     * @return
+     */
+    private static int calculateInSampleSize(BitmapFactory.Options opts, int width, int height) {
+        if (opts == null) return 1;
+        int inSampleSize = 1;
+        int realWidth = opts.outWidth;
+        int realHeight = opts.outHeight;
+
+        if (realHeight > height || realWidth > width) {
+            int widthRatio = realWidth / width;
+            int heightRatio = realHeight / height;
+            inSampleSize = (heightRatio > widthRatio) ? widthRatio : heightRatio;
+        }
+        return inSampleSize;
+    }
+
+    /**
+     * 图片转Byte数组
+     *
+     * @param bitmap
+     * @return
+     */
+    public static byte[] bitmapToBytes(Bitmap bitmap) {
+        ByteArrayOutputStream out = null;
+        byte[] buffer = null;
+        try {
+            out = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            out.flush();
+            buffer = out.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (out != null)
+                try {
+                    out.close();
+                    bitmap.recycle();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+        }
+        return buffer;
     }
 
 }

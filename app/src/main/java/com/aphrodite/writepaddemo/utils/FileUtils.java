@@ -468,4 +468,22 @@ public class FileUtils {
         }
         return true;
     }
+
+    /**
+     * 获取指定目录下所有文件
+     *
+     * @param path
+     * @return
+     */
+    public static File[] listFiles(String path) {
+        if (TextUtils.isEmpty(path)) {
+            return null;
+        }
+        File file = new File(path);
+        if (!file.exists() || file.isFile()) {
+            return null;
+        }
+        return file.listFiles();
+    }
+
 }
