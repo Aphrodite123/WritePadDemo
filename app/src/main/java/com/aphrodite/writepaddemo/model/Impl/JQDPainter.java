@@ -136,7 +136,7 @@ public class JQDPainter implements IBasePathDerive {
         }
         initCanvas();
         drawPath(mUgeePoints);
-        saveImage(mBitmap, path, name, Bitmap.CompressFormat.JPEG, 100);
+        saveImage(mBitmap, path, name, Bitmap.CompressFormat.PNG, 100);
     }
 
     @Override
@@ -171,6 +171,7 @@ public class JQDPainter implements IBasePathDerive {
 
     @Override
     public void createPDFWithPoints(String filename, IPathCallBack callBack) {
+        this.mIsGetImage = true;
         this.mCallBack = callBack;
         String realPath = mRootPath + filename;
         if (TextUtils.isEmpty(realPath)) {
@@ -236,8 +237,8 @@ public class JQDPainter implements IBasePathDerive {
                     num++;
                     if (num >= pointsPerFrame) {
                         pictureAbsPath = new StringBuilder();
-                        pictureAbsPath.append(index).append(".jpg");
-                        saveImage(mBitmap, mTempImagePath, pictureAbsPath.toString(), Bitmap.CompressFormat.JPEG, 100);
+                        pictureAbsPath.append(index).append(".png");
+                        saveImage(mBitmap, mTempImagePath, pictureAbsPath.toString(), Bitmap.CompressFormat.PNG, 100);
                         num = 0;
                         index++;
                     }

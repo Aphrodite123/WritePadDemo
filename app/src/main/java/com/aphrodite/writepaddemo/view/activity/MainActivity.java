@@ -259,7 +259,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         switch (v.getId()) {
             case R.id.gain_picture:
                 //获取图片
-                mPathDerive.createImageWithPoints("202103051538.jpg", new IPathCallBack() {
+                mPathDerive.createImageWithPoints("202103051538.png", new IPathCallBack() {
                     @Override
                     public void success(String path) {
                         Log.i(TAG, "Path of picture: " + path);
@@ -313,7 +313,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 mJQDCanvas.post(new Runnable() {
                     @Override
                     public void run() {
-                        mJQDCanvas.createImageWithFilename("202103051538.jpg", new IPathCallBack() {
+                        mJQDCanvas.createImageWithFilename("202103051538.png", new IPathCallBack() {
                             @Override
                             public void success(String path) {
                                 Log.i(TAG, "Path of current image: " + path);

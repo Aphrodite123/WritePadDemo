@@ -203,7 +203,8 @@ public class JQDCanvas extends View {
             return;
         }
         try {
-            String result = BitmapUtils.saveBitmap(mBitmap, path, name, Bitmap.CompressFormat.JPEG, 100);
+            String result = BitmapUtils.saveBitmap(mBitmap, path, name, Bitmap.CompressFormat.PNG,
+                    100);
             if (!TextUtils.isEmpty(result) && null != callBack) {
                 callBack.success(result);
             }

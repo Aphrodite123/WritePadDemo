@@ -69,7 +69,7 @@ public class BitmapUtils {
         FileOutputStream outputStream = null;
         try {
             outputStream = new FileOutputStream(filePath);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream);
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, outputStream);
             outputStream.flush();
         } catch (IOException e) {
             e.printStackTrace();
