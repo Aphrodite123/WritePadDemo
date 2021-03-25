@@ -309,7 +309,7 @@ public class FileUtils {
             return false;
         }
 
-        File folder = new File(folderName);
+        File folder = new File(filePath);
         return (folder.exists() && folder.isDirectory()) || folder.mkdirs();
     }
 

@@ -17,6 +17,7 @@ import com.aphrodite.writepaddemo.model.Impl.JQDPainter;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
 import com.aphrodite.writepaddemo.model.bean.PointBean;
 import com.aphrodite.writepaddemo.model.bean.PointsBean;
+import com.aphrodite.writepaddemo.utils.PathUtils;
 import com.aphrodite.writepaddemo.view.base.BaseActivity;
 import com.aphrodite.writepaddemo.view.widget.view.JQDCanvas;
 import com.google.gson.Gson;
@@ -95,7 +96,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     @Override
     protected void initData() {
         //路径：/storage/emulated/0/Android/data/com.aphrodite.writepaddemo/files/，注：米家插件则为沙盒目录
-        mRootPath = "/storage/emulated/0/Android/data/com.aphrodite.writepaddemo/files/202103051536/";
+        mRootPath = PathUtils.getExternalFileDir(this) + "/202103051536/";
         mGson = new Gson();
         //JQDCanvas设置
         mJQDCanvas.init(mRootPath);
