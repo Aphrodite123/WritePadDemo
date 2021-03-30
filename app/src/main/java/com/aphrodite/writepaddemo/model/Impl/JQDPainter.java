@@ -4,11 +4,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.pdf.PdfDocument;
-import android.print.PrintAttributes;
 import android.text.TextUtils;
 
 import com.aphrodite.writepaddemo.model.api.IBasePathDerive;
@@ -17,13 +14,20 @@ import com.aphrodite.writepaddemo.model.provider.BitmapProvider;
 import com.aphrodite.writepaddemo.utils.BitmapUtils;
 import com.aphrodite.writepaddemo.utils.FileUtils;
 import com.aphrodite.writepaddemo.utils.UIUtils;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.RectangleReadOnly;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import cn.ugee.mi.optimize.UgeePoint;
 import xyz.mylib.creator.handler.CreatorExecuteResponseHander;
@@ -35,9 +39,6 @@ import xyz.mylib.creator.task.AvcExecuteAsyncTask;
  */
 public class JQDPainter implements IBasePathDerive {
     private static final String TAG = JQDPainter.class.getSimpleName();
-    //1英寸=25.4毫米
-    private static final float UNIT_PER_INCH = (float) 25.4;
-
     private Context mContext;
     private static JQDPainter mInstance = null;
     private boolean mIsGetImage = true;
@@ -195,7 +196,33 @@ public class JQDPainter implements IBasePathDerive {
         }
         initCanvas();
         drawPath(mUgeePoints);
-        nativeCreatePdf(mBitmap, realPath);
+        imageToPdf(mBitmap, realPath);
+    }
+
+    @Override
+    public void createPDFWithText(String text, String filename, Map<String, Object> params, IPathCallBack callBack) {
+        this.mCallBack = callBack;
+        String realPath = mRootPath + filename;
+        if (TextUtils.isEmpty(realPath)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_FIVE);
+            }
+            return;
+        }
+        if (FileUtils.isFileExist(realPath)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_TWO);
+            }
+            return;
+        }
+        String path = realPath.substring(0, realPath.lastIndexOf(File.separator) + 1);
+        if (!FileUtils.makeDirs(path)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_THREE);
+            }
+            return;
+        }
+        textToPdf(text, realPath, params);
     }
 
     private void drawPath(List<UgeePoint> ugeePoints) {
@@ -331,43 +358,69 @@ public class JQDPainter implements IBasePathDerive {
         }, fileName);
     }
 
-    private void nativeCreatePdf(Bitmap bitmap, String filename) {
-        if (null == mContext || null == bitmap || TextUtils.isEmpty(filename)) {
+    private void imageToPdf(Bitmap bitmap, String filename) {
+        if (null == bitmap || TextUtils.isEmpty(filename)) {
             return;
         }
-        int densityDpi = mContext.getResources().getDisplayMetrics().densityDpi;
-        float pageWidth = PrintAttributes.MediaSize.ISO_A4.getWidthMils() * densityDpi / UNIT_PER_INCH;
-        float scale = pageWidth / bitmap.getWidth();
-        float pageHeight = scale * bitmap.getHeight();
-
-        PdfDocument doc = new PdfDocument();
-        Matrix matrix = new Matrix();
-        matrix.postScale(scale, scale);
-        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-
-        PdfDocument.PageInfo newPage = new PdfDocument.PageInfo.Builder((int) pageWidth, (int) pageHeight, 0).create();
-        PdfDocument.Page page = doc.startPage(newPage);
-        Canvas canvas = page.getCanvas();
-        canvas.drawBitmap(bitmap, matrix, paint);
-        doc.finishPage(page);
-
-        File saveFile = new File(filename);
-        FileOutputStream outputStream = null;
+        Rectangle rectangle = new RectangleReadOnly(bitmap.getWidth(), bitmap.getHeight());
+        PdfImpl pdf = new PdfImpl.Builder(filename, rectangle).build();
         try {
-            outputStream = new FileOutputStream(saveFile);
-            doc.writeTo(outputStream);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            pdf.init().addImageToPdf(bitmap, Element.ALIGN_CENTER);
+            if (null != mCallBack) {
+                mCallBack.success(filename);
+            }
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            try {
-                outputStream.flush();
-                outputStream.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_THREE);
             }
-            doc.close();
+        } catch (DocumentException e) {
+            e.printStackTrace();
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_THREE);
+            }
+        } finally {
+            pdf.close();
+        }
+    }
+
+    private void textToPdf(String text, String filename, Map<String, Object> params) {
+        if (TextUtils.isEmpty(text) || TextUtils.isEmpty(filename)) {
+            return;
+        }
+        Font font = new Font(Font.FontFamily.COURIER, 16f, Font.NORMAL, BaseColor.BLACK);
+        Rectangle rectangle = PageSize.A4;
+        int marginHorizontal = 20;
+        int marginVertical = 20;
+        if (null != params) {
+            font = (Font) params.get(PdfImpl.ParamsKey.FONT);
+            rectangle = new RectangleReadOnly((int) params.get(PdfImpl.ParamsKey.WIDTH), (int) params.get(PdfImpl.ParamsKey.HEIGHT));
+            marginHorizontal = (int) params.get(PdfImpl.ParamsKey.MARGIN_HORIZONTAL);
+            marginVertical = (int) params.get(PdfImpl.ParamsKey.MARGIN_VERTICAL);
+        }
+        PdfImpl pdf = new PdfImpl.Builder(filename, rectangle)
+                .setMarginLeft(marginHorizontal)
+                .setMarginRight(marginHorizontal)
+                .setMarginTop(marginVertical)
+                .setMarginBottom(marginVertical)
+                .build();
+        try {
+            pdf.init().addTextToPdf(text, font, Element.ALIGN_LEFT);
+            if (null != mCallBack) {
+                mCallBack.success(filename);
+            }
+        } catch (DocumentException e) {
+            e.printStackTrace();
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_THREE);
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_THREE);
+            }
+        } finally {
+            pdf.close();
         }
     }
 

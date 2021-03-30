@@ -21,3 +21,10 @@
 #-renamesourcefileattribute SourceFile
 -dontwarn io.microshow.rxffmpeg.**
 -keep class io.microshow.rxffmpeg.**{*;}
+
+ -keep class javax.xml.crypto.dsig.** { *; }
+ -dontwarn javax.xml.crypto.dsig.**
+ -keep class javax.xml.crypto.** { *; }
+ -dontwarn javax.xml.crypto.**
+ -keep class org.spongycastle.** { *; }
+ -dontwarn org.spongycastle.**

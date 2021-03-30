@@ -9,6 +9,7 @@ import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 import com.aphrodite.writepaddemo.model.Impl.JQDPainter;
@@ -128,33 +129,44 @@ public class JQDCanvas extends View {
         }
     }
 
-    public void drawPath(UgeePoint ugeePoint) {
-        if (null == mUgeePoint) {
-            mUgeePoint = ugeePoint;
+    public void displayPoints(List<UgeePoint> ugeePoints) {
+        if (null == ugeePoints || ugeePoints.size() <= 0) {
             return;
         }
+        if (null != mUgeePoint) {
+            ugeePoints.add(0, mUgeePoint);
+        }
         initCanvas();
-        if (mUgeePoint.pressure > 0 && ugeePoint.pressure <= 0) {
+        for (int i = 0; i < ugeePoints.size() - 1; i++) {
+            drawPath(ugeePoints.get(i), ugeePoints.get(i + 1));
+        }
+        invalidate();
+        mUgeePoint = ugeePoints.get(ugeePoints.size() - 1);
+    }
+
+    private void drawPath(UgeePoint ugeePoint, UgeePoint nextUgeePoint) {
+        if (null == ugeePoint || null == nextUgeePoint) {
+            return;
+        }
+        if (ugeePoint.state > 0 && nextUgeePoint.state <= 0) {
             saveBitmap();
         }
-        if (mUgeePoint.pressure <= 0 && ugeePoint.pressure > 0) {
-            mPath.moveTo(mUgeePoint.x * mViewScale, mUgeePoint.y * mViewScale);
+        if (ugeePoint.state <= 0 && nextUgeePoint.state > 0) {
+            mPath.moveTo(ugeePoint.x * mViewScale, ugeePoint.y * mViewScale);
         }
-        if (mUgeePoint.pressure > 0 && ugeePoint.pressure > 0) {
+        if (ugeePoint.state > 0 && nextUgeePoint.state > 0) {
             if (null != mPaint) {
-                mPaint.setStrokeWidth(lineWidth * calPressureScale(ugeePoint.pressure));
+                mPaint.setStrokeWidth(lineWidth * calPressureScale(nextUgeePoint.pressure));
                 mPaint.setColor(lineColor);
             }
-            drawPath(new float[]{mUgeePoint.x * mViewScale, mUgeePoint.y * mViewScale, ugeePoint.x * mViewScale, ugeePoint.y * mViewScale}, mViewCanvas, mPaint);
-            drawPath(new float[]{mUgeePoint.x * scale, mUgeePoint.y * scale, ugeePoint.x * scale, ugeePoint.y * scale}, mCanvas, mPaint);
-            invalidate();
+            drawPath(new float[]{ugeePoint.x * mViewScale, ugeePoint.y * mViewScale, nextUgeePoint.x * mViewScale, nextUgeePoint.y * mViewScale}, mViewCanvas, mPaint);
+            drawPath(new float[]{ugeePoint.x * scale, ugeePoint.y * scale, nextUgeePoint.x * scale, nextUgeePoint.y * scale}, mCanvas, mPaint);
         }
-        if (mUgeePoint.pressure <= 0 && ugeePoint.pressure <= 0) {
+        if (ugeePoint.state <= 0 && nextUgeePoint.state <= 0) {
             if (null != mPath) {
                 mPath.reset();
             }
         }
-        mUgeePoint = ugeePoint;
     }
 
     private void drawPath(float[] points, Canvas canvas, Paint paint) {

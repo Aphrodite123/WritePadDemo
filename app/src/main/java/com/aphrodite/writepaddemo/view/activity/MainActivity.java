@@ -3,6 +3,9 @@ package com.aphrodite.writepaddemo.view.activity;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -14,6 +17,7 @@ import android.widget.TextView;
 import com.aphrodite.writepaddemo.R;
 import com.aphrodite.writepaddemo.config.AppConfig;
 import com.aphrodite.writepaddemo.model.Impl.JQDPainter;
+import com.aphrodite.writepaddemo.model.Impl.PdfImpl;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
 import com.aphrodite.writepaddemo.model.bean.PointBean;
 import com.aphrodite.writepaddemo.model.bean.PointsBean;
@@ -21,6 +25,10 @@ import com.aphrodite.writepaddemo.utils.PathUtils;
 import com.aphrodite.writepaddemo.view.base.BaseActivity;
 import com.aphrodite.writepaddemo.view.widget.view.JQDCanvas;
 import com.google.gson.Gson;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.pdf.BaseFont;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -29,7 +37,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import androidx.annotation.NonNull;
 import cn.ugee.mi.optimize.UgeePenOptimizeClass;
@@ -43,11 +53,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private Button mGainPdf;
     private Button mUndo;
     private Button mSaveImage;
+    private Button mTextPdf;
     private TextView mContent;
 
     private static final String TAG = MainActivity.class.getSimpleName();
     //生成图片点间隔数，默认：5
     private static int DEFAULT_IMAGE_INTERVAL = 5;
+    private int mCount = 0;
 
     private String[] mPermissions = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -78,6 +90,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mGainPdf = findViewById(R.id.gain_pdf);
         mUndo = findViewById(R.id.undo);
         mSaveImage = findViewById(R.id.save_image);
+        mTextPdf = findViewById(R.id.text_trans_pdf);
         mContent = findViewById(R.id.content);
 
         DisplayMetrics dm = new DisplayMetrics();
@@ -91,10 +104,14 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mGainPdf.setOnClickListener(this::onClick);
         mUndo.setOnClickListener(this::onClick);
         mSaveImage.setOnClickListener(this::onClick);
+        mTextPdf.setOnClickListener(this::onClick);
     }
 
     @Override
     protected void initData() {
+        Typeface typeface = Typeface.DEFAULT;
+        Log.i(TAG, "Style of font. " + typeface.getStyle());
+
         //路径：/storage/emulated/0/Android/data/com.aphrodite.writepaddemo/files/，注：米家插件则为沙盒目录
         mRootPath = PathUtils.getExternalFileDir(this) + "/202103051536/";
         mGson = new Gson();
@@ -149,6 +166,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mPointsBean = mGson.fromJson(line, PointsBean.class);
         List<UgeePoint> elements = processPoints();
         List<UgeePoint> uptimizedPoints = new ArrayList<>();
+        List<UgeePoint> ugeePoints = new ArrayList<>();
         mUgeePenOptimizeClass = new UgeePenOptimizeClass(new cn.ugee.mi.optimize.OnPenCallBack() {
             @Override
             public void onPenOptimizeDate(UgeePoint ugeePoint) {
@@ -156,10 +174,18 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     return;
                 }
                 uptimizedPoints.add(ugeePoint);
+
                 mJQDCanvas.post(new Runnable() {
                     @Override
                     public void run() {
-                        mJQDCanvas.drawPath(ugeePoint);
+                        if (mCount < 5) {
+                            ugeePoints.add(ugeePoint);
+                            mCount++;
+                        } else {
+                            mJQDCanvas.displayPoints(ugeePoints);
+                            mCount = 0;
+                            ugeePoints.clear();
+                        }
                     }
                 });
             }
@@ -220,6 +246,20 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private Font setFont(float size, int style, BaseColor color) {
+        BaseFont baseFont = null;
+        Font font = null;
+        try {
+            baseFont = BaseFont.createFont("/assets/fonts/simsun.ttc,1", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            font = new Font(baseFont, size, style, color);
+        } catch (DocumentException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return font;
     }
 
     private String getCode(InputStream is) {
@@ -330,6 +370,30 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                         });
                     }
                 });
+                break;
+            case R.id.text_trans_pdf:
+                Map<String, Object> map = new HashMap<>();
+                Font textFont = setFont(16f, Font.NORMAL, new BaseColor(Color.BLACK));
+                map.put(PdfImpl.ParamsKey.FONT, textFont);
+                map.put(PdfImpl.ParamsKey.WIDTH, 1080);
+                map.put(PdfImpl.ParamsKey.HEIGHT, 1920);
+                map.put(PdfImpl.ParamsKey.MARGIN_HORIZONTAL, 20);
+                map.put(PdfImpl.ParamsKey.MARGIN_VERTICAL, 20);
+                mPathDerive.createPDFWithText("Hello 阿拉斯加", "202103051538.pdf", map,
+                        new IPathCallBack() {
+                            @Override
+                            public void success(String path) {
+                                Log.i(TAG, "Path of pdf: " + path);
+                                if (null != mContent) {
+                                    mContent.setText("Pdf路径为：" + path);
+                                }
+                            }
+
+                            @Override
+                            public void failed(int code) {
+                                Log.e(TAG, "Create pdf failed." + code);
+                            }
+                        });
                 break;
         }
     }

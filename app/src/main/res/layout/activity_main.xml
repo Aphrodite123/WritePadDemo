@@ -67,6 +67,16 @@
             android:textColor="@android:color/black"
             android:textSize="15sp" />
 
+        <Button
+            android:id="@+id/text_trans_pdf"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="Text转PDF"
+            android:textColor="@android:color/black"
+            android:textSize="15sp" />
+
     </LinearLayout>
 
     <TextView
