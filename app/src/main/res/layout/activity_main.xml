@@ -13,67 +13,140 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:layout_height="wrap_content"
         android:gravity="center"
-        android:orientation="horizontal">
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/show"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="#5E6367"
+                android:gravity="center"
+                android:onClick="show"
+                android:text="展示"
+                android:textColor="@android:color/white"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/canRevoke"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="4dp"
+                android:layout_weight="1"
+                android:background="#5E6367"
+                android:gravity="center"
+                android:onClick="canRevoke"
+                android:text="是否可撤销"
+                android:textColor="@android:color/white"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/revoke"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="4dp"
+                android:layout_weight="1"
+                android:background="#5E6367"
+                android:gravity="center"
+                android:onClick="revoke"
+                android:text="撤销"
+                android:textColor="@android:color/white"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/clear"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="4dp"
+                android:layout_weight="1"
+                android:background="#5E6367"
+                android:gravity="center"
+                android:onClick="clear"
+                android:text="清除"
+                android:textColor="@android:color/white"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/transImageOnline"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_marginLeft="4dp"
+                android:layout_weight="1"
+                android:background="#5E6367"
+                android:gravity="center"
+                android:onClick="transImageOnline"
+                android:text="转图片"
+                android:textColor="@android:color/white"
+                android:textSize="12sp" />
+
+        </LinearLayout>
 
         <Button
-            android:id="@+id/gain_picture"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:id="@+id/pathToImage"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
             android:gravity="center"
-            android:text="生成图片"
+            android:onClick="pathToImage"
+            android:text="路径转图片"
             android:textColor="@android:color/black"
             android:textSize="15sp" />
 
         <Button
-            android:id="@+id/gain_video"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:id="@+id/pathToVideo"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
             android:gravity="center"
-            android:text="生成Video"
+            android:onClick="pathToVideo"
+            android:text="路径转Video"
             android:textColor="@android:color/black"
             android:textSize="15sp" />
 
         <Button
-            android:id="@+id/gain_pdf"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:id="@+id/pathToPdf"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
             android:gravity="center"
-            android:text="生成Pdf"
+            android:onClick="pathToPdf"
+            android:text="路径转Pdf"
             android:textColor="@android:color/black"
             android:textSize="15sp" />
 
         <Button
-            android:id="@+id/undo"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:id="@+id/textToPdf"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
             android:gravity="center"
-            android:text="撤销"
-            android:textColor="@android:color/black"
-            android:textSize="15sp" />
-
-        <Button
-            android:id="@+id/save_image"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="保存图片"
-            android:textColor="@android:color/black"
-            android:textSize="15sp" />
-
-        <Button
-            android:id="@+id/text_trans_pdf"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center"
+            android:onClick="textToPdf"
             android:text="Text转PDF"
+            android:textColor="@android:color/black"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/delete"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:gravity="center"
+            android:onClick="delete"
+            android:text="删除"
             android:textColor="@android:color/black"
             android:textSize="15sp" />
 

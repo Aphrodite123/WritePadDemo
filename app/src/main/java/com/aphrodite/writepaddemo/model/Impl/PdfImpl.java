@@ -1,17 +1,17 @@
 package com.aphrodite.writepaddemo.model.Impl;
 
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.Typeface;
+import android.graphics.pdf.PdfDocument;
+import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
 import android.text.TextUtils;
 
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.Image;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.PdfWriter;
-
-import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -22,109 +22,134 @@ import java.io.IOException;
  */
 public class PdfImpl {
     private String mPath;
+    private int[] mPageSize;
+    private int[] margins;
+    private int mColor;
+    private Typeface mTypeface;
+    private float mTextSize;
 
-    private Rectangle mPageSize;
-    private float marginLeft;
-    private float marginRight;
-    private float marginTop;
-    private float marginBottom;
-
-    private Document mDocument;
+    private PdfDocument mDocument;
+    private PdfDocument.PageInfo mPageInfo;
+    private PdfDocument.Page mPage;
 
     public PdfImpl(Builder builder) {
         this.mPath = builder.mPath;
         this.mPageSize = builder.mPageSize;
-        this.marginLeft = builder.marginLeft;
-        this.marginRight = builder.marginRight;
-        this.marginTop = builder.marginTop;
-        this.marginBottom = builder.marginBottom;
+        this.margins = builder.margins;
+        this.mColor = builder.mColor;
+        this.mTypeface = builder.mTypeface;
+        this.mTextSize = builder.mTextSize;
     }
 
-    public PdfImpl init() throws FileNotFoundException, DocumentException {
-        mDocument = new Document(mPageSize, marginLeft, marginRight, marginTop, marginBottom);
-        PdfWriter.getInstance(mDocument, new FileOutputStream(mPath));
-        mDocument.open();
+    public PdfImpl init() {
+        // create a new document
+        mDocument = new PdfDocument();
+        // create a page description
+        Rect rect = null;
+        if (null != margins && margins.length >= 4) {
+            rect = new Rect(margins[0], margins[2], mPageSize[0] - margins[1], mPageSize[1] - margins[3]);
+        }
+        PdfDocument.PageInfo.Builder builder = new PdfDocument.PageInfo.Builder(mPageSize[0], mPageSize[1], 1);
+        if (null != rect) {
+            builder.setContentRect(rect);
+        }
+        mPageInfo = builder.create();
+        // start a page
+        mPage = mDocument.startPage(mPageInfo);
         return this;
     }
 
-    public PdfImpl addImageToPdf(Bitmap bitmap, int alignment) throws IOException, DocumentException {
-        if (null == bitmap) {
+    public PdfImpl addImageToPdf(Bitmap bitmap) {
+        if (null == bitmap || null == mPageSize || null == mPage) {
             return this;
         }
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, baos);
-        byte[] datas = baos.toByteArray();
-
-        Image image = Image.getInstance(datas);
-        image.setAlignment(alignment);
-        mDocument.add(image);
+        float scale = mPageSize[0] / bitmap.getWidth();
+        Matrix matrix = new Matrix();
+        matrix.postScale(scale, scale);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mPage.getCanvas().drawBitmap(bitmap, matrix, paint);
         return this;
     }
 
-    public PdfImpl addImageToPdf(String filename, float width, float height, int alignment) throws IOException, DocumentException {
-        if (TextUtils.isEmpty(filename)) {
+    public PdfImpl addTextToPdf(String content) {
+        if (TextUtils.isEmpty(content) || null == mPage) {
             return this;
         }
-        Image image = Image.getInstance(filename);
-        image.setAlignment(alignment);
-        image.scaleToFit(width, height);
-        mDocument.add(image);
+        TextPaint textPaint = new TextPaint();
+        textPaint.setColor(mColor);
+        textPaint.setTextSize(mTextSize);
+        textPaint.setTextAlign(Paint.Align.LEFT);
+        textPaint.setTypeface(mTypeface);
+
+        StaticLayout staticLayout = new StaticLayout(content, 0, content.length(), textPaint, mPage.getCanvas().getWidth(), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+        staticLayout.draw(mPage.getCanvas());
         return this;
     }
 
-    public PdfImpl addTitleToPdf(String content, Font font, int alignment) throws DocumentException {
-        return addTextToPdf(content, font, alignment);
-    }
-
-    public PdfImpl addTextToPdf(String content, Font font, int alignment) throws DocumentException {
-        if (TextUtils.isEmpty(content)) {
-            return this;
+    public PdfImpl finishPage() {
+        if (null != mDocument) {
+            mDocument.finishPage(mPage);
         }
-        Paragraph paragraph = new Paragraph(content, font);
-        paragraph.setAlignment(alignment);
-        mDocument.add(paragraph);
         return this;
     }
 
-    public void close() {
-        if (null == mDocument || !mDocument.isOpen()) {
-            return;
+    public boolean save() {
+        if (TextUtils.isEmpty(mPath) || null == mDocument) {
+            return false;
         }
-        mDocument.close();
-        mDocument = null;
+        File saveFile = new File(mPath);
+        FileOutputStream outputStream = null;
+        try {
+            outputStream = new FileOutputStream(saveFile);
+            mDocument.writeTo(outputStream);
+            return true;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                outputStream.flush();
+                outputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            mDocument.close();
+            mDocument = null;
+        }
+        return false;
     }
 
     public static class Builder {
         private String mPath;
+        private int[] mPageSize;
+        private int[] margins;
+        private float mTextSize;
+        private int mColor;
+        private Typeface mTypeface;
 
-        private Rectangle mPageSize;
-        private float marginLeft;
-        private float marginRight;
-        private float marginTop;
-        private float marginBottom;
-
-        public Builder(String path, Rectangle pageSize) {
+        public Builder(String path, int[] pageSize) {
             this.mPath = path;
             this.mPageSize = pageSize;
         }
 
-        public Builder setMarginLeft(float marginLeft) {
-            this.marginLeft = marginLeft;
+        public Builder setMargins(int[] margins) {
+            this.margins = margins;
             return this;
         }
 
-        public Builder setMarginRight(float marginRight) {
-            this.marginRight = marginRight;
+        public Builder setTextSize(float textSize) {
+            this.mTextSize = textSize;
             return this;
         }
 
-        public Builder setMarginTop(float marginTop) {
-            this.marginTop = marginTop;
+        public Builder setColor(int color) {
+            this.mColor = color;
             return this;
         }
 
-        public Builder setMarginBottom(float marginBottom) {
-            this.marginBottom = marginBottom;
+        public Builder setTypeface(Typeface typeface) {
+            this.mTypeface = typeface;
             return this;
         }
 
@@ -135,7 +160,9 @@ public class PdfImpl {
     }
 
     public interface ParamsKey {
-        String FONT = "font";
+        String TEXT_SIZE = "text_size";
+        String TEXT_COLOR = "text_color";
+        String TYPEFACE = "typeface";
         String WIDTH = "width";
         String HEIGHT = "height";
         String MARGIN_HORIZONTAL = "margin_horizontal";

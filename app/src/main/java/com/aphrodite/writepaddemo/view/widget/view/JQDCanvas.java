@@ -6,10 +6,8 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PorterDuff;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 import com.aphrodite.writepaddemo.model.Impl.JQDPainter;
@@ -102,13 +100,12 @@ public class JQDCanvas extends View {
         if (null == mViewCanvas) {
             mViewCanvas = new Canvas(mViewBitmap);
         }
-
         if (null == mBgBitmap) {
             mBgBitmap = Bitmap.createBitmap((int) (scale * deviceWidth), (int) (scale * deviceHeight), Bitmap.Config.ARGB_8888);
         }
         mBitmap = BitmapUtils.drawBitmapBgColor(backgroundColor, mBgBitmap);
         if (null == mCanvas) {
-            mCanvas = new Canvas(mBgBitmap);
+            mCanvas = new Canvas(mBitmap);
         }
 
     }
@@ -133,15 +130,15 @@ public class JQDCanvas extends View {
         if (null == ugeePoints || ugeePoints.size() <= 0) {
             return;
         }
+        initCanvas();
         if (null != mUgeePoint) {
             ugeePoints.add(0, mUgeePoint);
         }
-        initCanvas();
         for (int i = 0; i < ugeePoints.size() - 1; i++) {
             drawPath(ugeePoints.get(i), ugeePoints.get(i + 1));
         }
-        invalidate();
         mUgeePoint = ugeePoints.get(ugeePoints.size() - 1);
+        invalidate();
     }
 
     private void drawPath(UgeePoint ugeePoint, UgeePoint nextUgeePoint) {
@@ -215,17 +212,16 @@ public class JQDCanvas extends View {
             return;
         }
         try {
-            String result = BitmapUtils.saveBitmap(mBitmap, path, name, Bitmap.CompressFormat.PNG,
-                    100);
+            String result = BitmapUtils.saveBitmap(mBitmap, path, name, Bitmap.CompressFormat.PNG, 100);
             if (!TextUtils.isEmpty(result) && null != callBack) {
                 callBack.success(result);
             }
             return;
         } catch (IOException e) {
             e.printStackTrace();
-            if (null != mViewBitmap) {
-                mViewBitmap.recycle();
-                mViewBitmap = null;
+            if (null != mBitmap) {
+                mBitmap.recycle();
+                mBitmap = null;
             }
             if (null != callBack) {
                 callBack.failed(JQDPainter.Error.ERROR_FOUR);
@@ -254,6 +250,7 @@ public class JQDCanvas extends View {
      */
     public void reDraw() {
         if (null == mCacheBitmaps || mCacheBitmaps.size() <= 0) {
+            clear();
             return;
         }
         mViewBitmap = mCacheBitmaps.get(mCacheBitmaps.size() - 1);
@@ -284,29 +281,15 @@ public class JQDCanvas extends View {
     }
 
     public void clear() {
-        if (null != mViewCanvas) {
-            mViewCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-        }
-        if (null != mCanvas) {
-            mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
-        }
-        invalidate();
-    }
-
-    public void destroy() {
+        mViewCanvas = null;
+        mCanvas = null;
         if (null != mViewBitmap) {
             mViewBitmap.recycle();
             mViewBitmap = null;
         }
-        if (null != mViewCanvas) {
-            mViewCanvas = null;
-        }
         if (null != mBitmap) {
             mBitmap.recycle();
             mBitmap = null;
-        }
-        if (null != mCanvas) {
-            mCanvas = null;
         }
         if (null != mBgBitmap) {
             mBgBitmap.recycle();
@@ -315,6 +298,29 @@ public class JQDCanvas extends View {
         if (null != mCacheBitmaps) {
             mCacheBitmaps.clear();
         }
+        mUgeePoint = null;
+        invalidate();
+    }
+
+    public void destroy() {
+        mViewCanvas = null;
+        mCanvas = null;
+        if (null != mViewBitmap) {
+            mViewBitmap.recycle();
+            mViewBitmap = null;
+        }
+        if (null != mBitmap) {
+            mBitmap.recycle();
+            mBitmap = null;
+        }
+        if (null != mBgBitmap) {
+            mBgBitmap.recycle();
+            mBgBitmap = null;
+        }
+        if (null != mCacheBitmaps) {
+            mCacheBitmaps.clear();
+        }
+        mUgeePoint = null;
     }
 
     public void setScale(float scale) {

@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.Typeface;
 import android.text.TextUtils;
 
 import com.aphrodite.writepaddemo.model.api.IBasePathDerive;
@@ -14,16 +15,8 @@ import com.aphrodite.writepaddemo.model.provider.BitmapProvider;
 import com.aphrodite.writepaddemo.utils.BitmapUtils;
 import com.aphrodite.writepaddemo.utils.FileUtils;
 import com.aphrodite.writepaddemo.utils.UIUtils;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.PageSize;
-import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.RectangleReadOnly;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,7 +31,6 @@ import xyz.mylib.creator.task.AvcExecuteAsyncTask;
  * 智能手写板轨迹数据生成图片，视频等接口实现
  */
 public class JQDPainter implements IBasePathDerive {
-    private static final String TAG = JQDPainter.class.getSimpleName();
     private Context mContext;
     private static JQDPainter mInstance = null;
     private boolean mIsGetImage = true;
@@ -362,25 +354,16 @@ public class JQDPainter implements IBasePathDerive {
         if (null == bitmap || TextUtils.isEmpty(filename)) {
             return;
         }
-        Rectangle rectangle = new RectangleReadOnly(bitmap.getWidth(), bitmap.getHeight());
-        PdfImpl pdf = new PdfImpl.Builder(filename, rectangle).build();
-        try {
-            pdf.init().addImageToPdf(bitmap, Element.ALIGN_CENTER);
-            if (null != mCallBack) {
-                mCallBack.success(filename);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_THREE);
-            }
-        } catch (DocumentException e) {
-            e.printStackTrace();
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_THREE);
-            }
-        } finally {
-            pdf.close();
+        PdfImpl.Builder builder = new PdfImpl.Builder(filename, new int[]{bitmap.getWidth(), bitmap.getHeight()});
+        PdfImpl pdf = builder.build();
+        boolean result = pdf.init().addImageToPdf(bitmap).finishPage().save();
+        if (null == mCallBack) {
+            return;
+        }
+        if (result) {
+            mCallBack.success(filename);
+        } else {
+            mCallBack.failed(Error.ERROR_FOUR);
         }
     }
 
@@ -388,39 +371,35 @@ public class JQDPainter implements IBasePathDerive {
         if (TextUtils.isEmpty(text) || TextUtils.isEmpty(filename)) {
             return;
         }
-        Font font = new Font(Font.FontFamily.COURIER, 16f, Font.NORMAL, BaseColor.BLACK);
-        Rectangle rectangle = PageSize.A4;
-        int marginHorizontal = 20;
-        int marginVertical = 20;
+        int size = 16;
+        int color = Color.BLACK;
+        Typeface typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL);
+        int[] pageSize = {UIUtils.getDisplayWidthPixels(mContext), UIUtils.getDisplayHeightPixels(mContext)};
+        int[] margins = {20, 20, 20, 20};
         if (null != params) {
-            font = (Font) params.get(PdfImpl.ParamsKey.FONT);
-            rectangle = new RectangleReadOnly((int) params.get(PdfImpl.ParamsKey.WIDTH), (int) params.get(PdfImpl.ParamsKey.HEIGHT));
-            marginHorizontal = (int) params.get(PdfImpl.ParamsKey.MARGIN_HORIZONTAL);
-            marginVertical = (int) params.get(PdfImpl.ParamsKey.MARGIN_VERTICAL);
+            size = (int) params.get(PdfImpl.ParamsKey.TEXT_SIZE);
+            color = (int) params.get(PdfImpl.ParamsKey.TEXT_COLOR);
+            typeface = (Typeface) params.get(PdfImpl.ParamsKey.TYPEFACE);
+            pageSize = new int[]{(int) params.get(PdfImpl.ParamsKey.WIDTH), (int) params.get(PdfImpl.ParamsKey.HEIGHT)};
+            margins = new int[]{(int) params.get(PdfImpl.ParamsKey.MARGIN_HORIZONTAL)
+                    , (int) params.get(PdfImpl.ParamsKey.MARGIN_VERTICAL)
+                    , (int) params.get(PdfImpl.ParamsKey.MARGIN_HORIZONTAL)
+                    , (int) params.get(PdfImpl.ParamsKey.MARGIN_VERTICAL)};
         }
-        PdfImpl pdf = new PdfImpl.Builder(filename, rectangle)
-                .setMarginLeft(marginHorizontal)
-                .setMarginRight(marginHorizontal)
-                .setMarginTop(marginVertical)
-                .setMarginBottom(marginVertical)
-                .build();
-        try {
-            pdf.init().addTextToPdf(text, font, Element.ALIGN_LEFT);
-            if (null != mCallBack) {
-                mCallBack.success(filename);
-            }
-        } catch (DocumentException e) {
-            e.printStackTrace();
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_THREE);
-            }
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_THREE);
-            }
-        } finally {
-            pdf.close();
+        PdfImpl.Builder builder = new PdfImpl.Builder(filename, pageSize)
+                .setTextSize(size)
+                .setColor(color)
+                .setTypeface(typeface)
+                .setMargins(margins);
+        PdfImpl pdf = builder.build();
+        boolean result = pdf.init().addTextToPdf(text).finishPage().save();
+        if (null == mCallBack) {
+            return;
+        }
+        if (result) {
+            mCallBack.success(filename);
+        } else {
+            mCallBack.failed(Error.ERROR_FOUR);
         }
     }
 

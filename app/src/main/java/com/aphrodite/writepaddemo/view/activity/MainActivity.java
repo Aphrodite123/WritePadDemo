@@ -5,7 +5,6 @@ import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
-import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -21,14 +20,11 @@ import com.aphrodite.writepaddemo.model.Impl.PdfImpl;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
 import com.aphrodite.writepaddemo.model.bean.PointBean;
 import com.aphrodite.writepaddemo.model.bean.PointsBean;
+import com.aphrodite.writepaddemo.utils.FileUtils;
 import com.aphrodite.writepaddemo.utils.PathUtils;
 import com.aphrodite.writepaddemo.view.base.BaseActivity;
 import com.aphrodite.writepaddemo.view.widget.view.JQDCanvas;
 import com.google.gson.Gson;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Font;
-import com.itextpdf.text.pdf.BaseFont;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -45,15 +41,13 @@ import androidx.annotation.NonNull;
 import cn.ugee.mi.optimize.UgeePenOptimizeClass;
 import cn.ugee.mi.optimize.UgeePoint;
 
-public class MainActivity extends BaseActivity implements View.OnClickListener {
+public class MainActivity extends BaseActivity {
     private LinearLayout mRoot;
     private JQDCanvas mJQDCanvas;
-    private Button mGainPicture;
-    private Button mGainVideo;
-    private Button mGainPdf;
-    private Button mUndo;
-    private Button mSaveImage;
-    private Button mTextPdf;
+    private Button mShow;
+    private Button mCanRevoke;
+    private Button mRevoke;
+    private Button mClear;
     private TextView mContent;
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -75,6 +69,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     private Gson mGson;
 
     private JQDPainter mPathDerive;
+    private List<UgeePoint> uptimizedPoints = new ArrayList<>();
 
     @Override
     protected int getViewId() {
@@ -85,12 +80,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     protected void initView() {
         mRoot = findViewById(R.id.root);
         mJQDCanvas = findViewById(R.id.pen);
-        mGainPicture = findViewById(R.id.gain_picture);
-        mGainVideo = findViewById(R.id.gain_video);
-        mGainPdf = findViewById(R.id.gain_pdf);
-        mUndo = findViewById(R.id.undo);
-        mSaveImage = findViewById(R.id.save_image);
-        mTextPdf = findViewById(R.id.text_trans_pdf);
+        mRevoke = findViewById(R.id.revoke);
         mContent = findViewById(R.id.content);
 
         DisplayMetrics dm = new DisplayMetrics();
@@ -99,19 +89,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     @Override
     protected void initListener() {
-        mGainPicture.setOnClickListener(this::onClick);
-        mGainVideo.setOnClickListener(this::onClick);
-        mGainPdf.setOnClickListener(this::onClick);
-        mUndo.setOnClickListener(this::onClick);
-        mSaveImage.setOnClickListener(this::onClick);
-        mTextPdf.setOnClickListener(this::onClick);
     }
 
     @Override
     protected void initData() {
-        Typeface typeface = Typeface.DEFAULT;
-        Log.i(TAG, "Style of font. " + typeface.getStyle());
-
         //路径：/storage/emulated/0/Android/data/com.aphrodite.writepaddemo/files/，注：米家插件则为沙盒目录
         mRootPath = PathUtils.getExternalFileDir(this) + "/202103051536/";
         mGson = new Gson();
@@ -165,8 +146,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
         mPointsBean = mGson.fromJson(line, PointsBean.class);
         List<UgeePoint> elements = processPoints();
-        List<UgeePoint> uptimizedPoints = new ArrayList<>();
-        List<UgeePoint> ugeePoints = new ArrayList<>();
         mUgeePenOptimizeClass = new UgeePenOptimizeClass(new cn.ugee.mi.optimize.OnPenCallBack() {
             @Override
             public void onPenOptimizeDate(UgeePoint ugeePoint) {
@@ -174,20 +153,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                     return;
                 }
                 uptimizedPoints.add(ugeePoint);
-
-                mJQDCanvas.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (mCount < 5) {
-                            ugeePoints.add(ugeePoint);
-                            mCount++;
-                        } else {
-                            mJQDCanvas.displayPoints(ugeePoints);
-                            mCount = 0;
-                            ugeePoints.clear();
-                        }
-                    }
-                });
             }
 
             @Override
@@ -248,18 +213,164 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         return null;
     }
 
-    private Font setFont(float size, int style, BaseColor color) {
-        BaseFont baseFont = null;
-        Font font = null;
-        try {
-            baseFont = BaseFont.createFont("/assets/fonts/simsun.ttc,1", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-            font = new Font(baseFont, size, style, color);
-        } catch (DocumentException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return font;
+    /**
+     * 在线轨迹转图片
+     */
+    public void transImageOnline(View transImageOnline) {
+        mJQDCanvas.post(new Runnable() {
+            @Override
+            public void run() {
+                mJQDCanvas.createImageWithFilename("202103051538.png", new IPathCallBack() {
+                    @Override
+                    public void success(String path) {
+                        Log.i(TAG, "Path of current image: " + path);
+                        if (null != mContent) {
+                            mContent.setText("实时图片路径为：" + path);
+                        }
+                    }
+
+                    @Override
+                    public void failed(int code) {
+                        Log.e(TAG, "Create code failed." + code);
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * 展示
+     */
+    public void show(View show) {
+        mJQDCanvas.clear();
+        mJQDCanvas.setImageBgColor(Color.RED);
+        mJQDCanvas.post(new Runnable() {
+            @Override
+            public void run() {
+                mJQDCanvas.displayPoints(uptimizedPoints);
+            }
+        });
+    }
+
+    /**
+     * 是否可撤销
+     */
+    public void canRevoke(View canRevoke) {
+        Log.i(TAG, "Revoke status. " + mJQDCanvas.canRevoke());
+    }
+
+    /**
+     * 撤销
+     */
+    public void revoke(View revoke) {
+        mJQDCanvas.revoke();
+    }
+
+    /**
+     * 清除
+     */
+    public void clear(View clear) {
+        mJQDCanvas.clear();
+    }
+
+    /**
+     * 路径转图片
+     */
+    public void pathToImage(View pathToImage) {
+        mPathDerive.createImageWithPoints("202103051538.png", new IPathCallBack() {
+            @Override
+            public void success(String path) {
+                Log.i(TAG, "Path of picture: " + path);
+                if (null != mContent) {
+                    mContent.setText("图片路径为：" + path);
+                }
+            }
+
+            @Override
+            public void failed(int code) {
+                Log.e(TAG, "Create image failed." + code);
+            }
+        });
+    }
+
+    /**
+     * 路径转视频
+     */
+    public void pathToVideo(View pathToVideo) {
+        mPathDerive.createVideoWithPoints("202103051538.mp4", DEFAULT_IMAGE_INTERVAL, new IPathCallBack() {
+            @Override
+            public void success(String path) {
+                Log.i(TAG, "Path of video: " + path);
+                if (null != mContent) {
+                    mContent.setText("Video路径为：" + path);
+                }
+            }
+
+            @Override
+            public void failed(int code) {
+                Log.e(TAG, "Create video failed." + code);
+            }
+        });
+    }
+
+    /**
+     * 路径转PDF
+     */
+    public void pathToPdf(View pathToPdf) {
+        mPathDerive.createPDFWithPoints("202103051538.pdf", new IPathCallBack() {
+            @Override
+            public void success(String path) {
+                Log.i(TAG, "Path of pdf: " + path);
+                if (null != mContent) {
+                    mContent.setText("Pdf路径为：" + path);
+                }
+            }
+
+            @Override
+            public void failed(int code) {
+                Log.e(TAG, "Create pdf failed." + code);
+            }
+        });
+    }
+
+    /**
+     * Text转PDF
+     */
+    public void textToPdf(View textToPdf) {
+        Map<String, Object> map = new HashMap<>();
+        Typeface typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL);
+        map.put(PdfImpl.ParamsKey.TEXT_SIZE, 20);
+        map.put(PdfImpl.ParamsKey.TEXT_COLOR, Color.BLACK);
+        map.put(PdfImpl.ParamsKey.TYPEFACE, typeface);
+        map.put(PdfImpl.ParamsKey.WIDTH, 1080);
+        map.put(PdfImpl.ParamsKey.HEIGHT, 1920);
+        map.put(PdfImpl.ParamsKey.MARGIN_HORIZONTAL, 20);
+        map.put(PdfImpl.ParamsKey.MARGIN_VERTICAL, 20);
+        String text = "Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 " +
+                "Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello " +
+                "阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加";
+        mPathDerive.createPDFWithText(text, "202103051538.pdf", map,
+                new IPathCallBack() {
+                    @Override
+                    public void success(String path) {
+                        Log.i(TAG, "Path of pdf: " + path);
+                        if (null != mContent) {
+                            mContent.setText("Pdf路径为：" + path);
+                        }
+                    }
+
+                    @Override
+                    public void failed(int code) {
+                        Log.e(TAG, "Create pdf failed." + code);
+                    }
+                });
+    }
+
+    /**
+     * 删除已存在文件
+     */
+    public void delete(View delete) {
+        FileUtils.deleteFile(mRootPath);
     }
 
     private String getCode(InputStream is) {
@@ -293,109 +404,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         DisplayMetrics dm = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(dm);
         return dm.density;
-    }
-
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.gain_picture:
-                //获取图片
-                mPathDerive.createImageWithPoints("202103051538.png", new IPathCallBack() {
-                    @Override
-                    public void success(String path) {
-                        Log.i(TAG, "Path of picture: " + path);
-                        if (null != mContent) {
-                            mContent.setText("图片路径为：" + path);
-                        }
-                    }
-
-                    @Override
-                    public void failed(int code) {
-                        Log.e(TAG, "Create image failed." + code);
-                    }
-                });
-                break;
-            case R.id.gain_video:
-                mPathDerive.createVideoWithPoints("202103051538.mp4", DEFAULT_IMAGE_INTERVAL, new IPathCallBack() {
-                    @Override
-                    public void success(String path) {
-                        Log.i(TAG, "Path of video: " + path);
-                        if (null != mContent) {
-                            mContent.setText("Video路径为：" + path);
-                        }
-                    }
-
-                    @Override
-                    public void failed(int code) {
-                        Log.e(TAG, "Create video failed." + code);
-                    }
-                });
-                break;
-            case R.id.gain_pdf:
-                mPathDerive.createPDFWithPoints("202103051538.pdf", new IPathCallBack() {
-                    @Override
-                    public void success(String path) {
-                        Log.i(TAG, "Path of pdf: " + path);
-                        if (null != mContent) {
-                            mContent.setText("Pdf路径为：" + path);
-                        }
-                    }
-
-                    @Override
-                    public void failed(int code) {
-                        Log.e(TAG, "Create pdf failed." + code);
-                    }
-                });
-                break;
-            case R.id.undo:
-                mJQDCanvas.revoke();
-                break;
-            case R.id.save_image:
-                mJQDCanvas.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        mJQDCanvas.createImageWithFilename("202103051538.png", new IPathCallBack() {
-                            @Override
-                            public void success(String path) {
-                                Log.i(TAG, "Path of current image: " + path);
-                                if (null != mContent) {
-                                    mContent.setText("实时图片路径为：" + path);
-                                }
-                            }
-
-                            @Override
-                            public void failed(int code) {
-                                Log.e(TAG, "Create code failed." + code);
-                            }
-                        });
-                    }
-                });
-                break;
-            case R.id.text_trans_pdf:
-                Map<String, Object> map = new HashMap<>();
-                Font textFont = setFont(16f, Font.NORMAL, new BaseColor(Color.BLACK));
-                map.put(PdfImpl.ParamsKey.FONT, textFont);
-                map.put(PdfImpl.ParamsKey.WIDTH, 1080);
-                map.put(PdfImpl.ParamsKey.HEIGHT, 1920);
-                map.put(PdfImpl.ParamsKey.MARGIN_HORIZONTAL, 20);
-                map.put(PdfImpl.ParamsKey.MARGIN_VERTICAL, 20);
-                mPathDerive.createPDFWithText("Hello 阿拉斯加", "202103051538.pdf", map,
-                        new IPathCallBack() {
-                            @Override
-                            public void success(String path) {
-                                Log.i(TAG, "Path of pdf: " + path);
-                                if (null != mContent) {
-                                    mContent.setText("Pdf路径为：" + path);
-                                }
-                            }
-
-                            @Override
-                            public void failed(int code) {
-                                Log.e(TAG, "Create pdf failed." + code);
-                            }
-                        });
-                break;
-        }
     }
 
 }
