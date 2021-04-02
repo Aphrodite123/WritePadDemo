@@ -18,7 +18,7 @@ import java.io.IOException;
 
 /**
  * Created by Aphrodite on 2021/3/10.
- * 使用iText讲文本和图片按要求转PDF
+ * 使用PdfDocument将Text/Image按要求转PDF
  */
 public class PdfImpl {
     private String mPath;
@@ -67,6 +67,7 @@ public class PdfImpl {
         Matrix matrix = new Matrix();
         matrix.postScale(scale, scale);
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        // draw something on the page
         mPage.getCanvas().drawBitmap(bitmap, matrix, paint);
         return this;
     }
@@ -88,6 +89,7 @@ public class PdfImpl {
 
     public PdfImpl finishPage() {
         if (null != mDocument) {
+            // finish the page
             mDocument.finishPage(mPage);
         }
         return this;
@@ -101,6 +103,7 @@ public class PdfImpl {
         FileOutputStream outputStream = null;
         try {
             outputStream = new FileOutputStream(saveFile);
+            // write the document content
             mDocument.writeTo(outputStream);
             return true;
         } catch (FileNotFoundException e) {
@@ -114,6 +117,7 @@ public class PdfImpl {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            // close the document
             mDocument.close();
             mDocument = null;
         }

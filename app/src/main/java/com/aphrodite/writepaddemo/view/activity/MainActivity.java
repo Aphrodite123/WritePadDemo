@@ -9,7 +9,6 @@ import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -44,16 +43,11 @@ import cn.ugee.mi.optimize.UgeePoint;
 public class MainActivity extends BaseActivity {
     private LinearLayout mRoot;
     private JQDCanvas mJQDCanvas;
-    private Button mShow;
-    private Button mCanRevoke;
-    private Button mRevoke;
-    private Button mClear;
     private TextView mContent;
 
     private static final String TAG = MainActivity.class.getSimpleName();
     //生成图片点间隔数，默认：5
     private static int DEFAULT_IMAGE_INTERVAL = 5;
-    private int mCount = 0;
 
     private String[] mPermissions = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -80,11 +74,7 @@ public class MainActivity extends BaseActivity {
     protected void initView() {
         mRoot = findViewById(R.id.root);
         mJQDCanvas = findViewById(R.id.pen);
-        mRevoke = findViewById(R.id.revoke);
         mContent = findViewById(R.id.content);
-
-        DisplayMetrics dm = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(dm);
     }
 
     @Override
