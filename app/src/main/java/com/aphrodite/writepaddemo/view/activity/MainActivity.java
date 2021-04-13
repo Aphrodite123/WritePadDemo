@@ -5,6 +5,7 @@ import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.CountDownTimer;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -35,6 +36,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import androidx.annotation.NonNull;
 import cn.ugee.mi.optimize.UgeePenOptimizeClass;
@@ -64,6 +67,7 @@ public class MainActivity extends BaseActivity {
 
     private JQDPainter mPathDerive;
     private List<UgeePoint> uptimizedPoints = new ArrayList<>();
+    private int mIndex = 0;
 
     @Override
     protected int getViewId() {
@@ -237,7 +241,26 @@ public class MainActivity extends BaseActivity {
         mJQDCanvas.post(new Runnable() {
             @Override
             public void run() {
-                mJQDCanvas.displayPoints(uptimizedPoints);
+                CountDownTimer countDownTimer = new CountDownTimer(60 * 1000, 100) {
+                    @Override
+                    public void onTick(long millisUntilFinished) {
+                        if (mIndex <= uptimizedPoints.size() - 5) {
+                            mJQDCanvas.displayPoints(uptimizedPoints.subList(mIndex, mIndex + 5));
+                            mIndex += 5;
+                        } else {
+                            if (mIndex < uptimizedPoints.size()) {
+                                mJQDCanvas.displayPoints(uptimizedPoints.subList(mIndex, uptimizedPoints.size()));
+                                mIndex = uptimizedPoints.size();
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onFinish() {
+
+                    }
+                };
+                countDownTimer.start();
             }
         });
     }
@@ -246,6 +269,9 @@ public class MainActivity extends BaseActivity {
      * 是否可撤销
      */
     public void canRevoke(View canRevoke) {
+        if (null != mContent) {
+            mContent.setText("是否可以进行撤销：" + mJQDCanvas.canRevoke());
+        }
         Log.i(TAG, "Revoke status. " + mJQDCanvas.canRevoke());
     }
 
@@ -332,8 +358,8 @@ public class MainActivity extends BaseActivity {
         map.put(PdfImpl.ParamsKey.TEXT_SIZE, 20);
         map.put(PdfImpl.ParamsKey.TEXT_COLOR, Color.BLACK);
         map.put(PdfImpl.ParamsKey.TYPEFACE, typeface);
-        map.put(PdfImpl.ParamsKey.WIDTH, 1080);
-        map.put(PdfImpl.ParamsKey.HEIGHT, 1920);
+        map.put(PdfImpl.ParamsKey.WIDTH, 320);
+        map.put(PdfImpl.ParamsKey.HEIGHT, 260);
         map.put(PdfImpl.ParamsKey.MARGIN_HORIZONTAL, 20);
         map.put(PdfImpl.ParamsKey.MARGIN_VERTICAL, 20);
         String text = "Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 " +
