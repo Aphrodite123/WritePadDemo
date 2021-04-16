@@ -107,7 +107,6 @@ public class JQDCanvas extends View {
         if (null == mCanvas) {
             mCanvas = new Canvas(mBitmap);
         }
-
     }
 
     @Override

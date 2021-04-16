@@ -36,8 +36,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import androidx.annotation.NonNull;
 import cn.ugee.mi.optimize.UgeePenOptimizeClass;
@@ -102,6 +100,8 @@ public class MainActivity extends BaseActivity {
         mPathDerive = JQDPainter.getInstance(this);
         mPathDerive.init(mRootPath);
         mPathDerive.setScale((float) (getDensity() * 0.03));
+        mPathDerive.setImageBgColor(Color.BLACK);
+        mPathDerive.setPathColor(Color.WHITE);
         //点优化
         optimizePoints();
     }
@@ -241,7 +241,7 @@ public class MainActivity extends BaseActivity {
         mJQDCanvas.post(new Runnable() {
             @Override
             public void run() {
-                CountDownTimer countDownTimer = new CountDownTimer(60 * 1000, 100) {
+                CountDownTimer countDownTimer = new CountDownTimer(60 * 1000, 50) {
                     @Override
                     public void onTick(long millisUntilFinished) {
                         if (mIndex <= uptimizedPoints.size() - 5) {
