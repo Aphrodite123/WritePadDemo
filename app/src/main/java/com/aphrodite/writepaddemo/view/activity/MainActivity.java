@@ -170,23 +170,11 @@ public class MainActivity extends BaseActivity {
         }
         List<UgeePoint> elements = new ArrayList<>();
         UgeePoint element = null;
-        byte state = 0;
         for (PointBean bean : pointBeans) {
             if (null == bean) {
                 continue;
             }
-            //0-悬浮；1-书写；2-离开
-            switch (bean.getState()) {
-                case 160:
-                    state = 0;
-                    break;
-                case 161:
-                    state = 1;
-                    break;
-                default:
-                    break;
-            }
-            element = new UgeePoint(bean.getX(), bean.getY(), bean.getPressure(), state);
+            element = new UgeePoint(bean.getX(), bean.getY(), bean.getPressure(), bean.getState());
             elements.add(element);
         }
         return elements;

@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Typeface;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.aphrodite.writepaddemo.model.api.IBasePathDerive;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
@@ -31,6 +32,7 @@ import xyz.mylib.creator.task.AvcExecuteAsyncTask;
  * 智能手写板轨迹数据生成图片，视频等接口实现
  */
 public class JQDPainter implements IBasePathDerive {
+    private static final String TAG = JQDPainter.class.getSimpleName();
     private Context mContext;
     private static JQDPainter mInstance = null;
     private boolean mIsGetImage = true;
@@ -324,11 +326,12 @@ public class JQDPainter implements IBasePathDerive {
                 if (null != mCallBack) {
                     mCallBack.success(fileName);
                 }
+                Log.d(TAG, "Enter to onSuccess.");
             }
 
             @Override
             public void onProgress(Object message) {
-
+                Log.d(TAG, "Enter to onProgress." + message);
             }
 
             @Override
@@ -340,11 +343,12 @@ public class JQDPainter implements IBasePathDerive {
 
             @Override
             public void onStart() {
-
+                Log.d(TAG, "Enter to onStart.");
             }
 
             @Override
             public void onFinish() {
+                Log.d(TAG, "Enter to onFinish.");
                 FileUtils.deleteFile(srcPath);
             }
         }, fileName);
