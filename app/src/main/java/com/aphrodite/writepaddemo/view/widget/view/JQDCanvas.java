@@ -322,8 +322,8 @@ public class JQDCanvas extends View {
         mUgeePoint = null;
     }
 
-    public void setScale(float scale) {
-        this.scale = scale;
+    public void setScale(Context context, float scale) {
+        this.scale = scale * UIUtils.getDensity(context);
     }
 
     public void setDeviceWidth(int width) {

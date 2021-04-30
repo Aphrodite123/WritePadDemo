@@ -428,8 +428,8 @@ public class JQDPainter implements IBasePathDerive {
         this.deviceHeight = height;
     }
 
-    public void setScale(float scale) {
-        this.scale = scale;
+    public void setScale(Context context, float scale) {
+        this.scale = scale * UIUtils.getDensity(context);
     }
 
     public void setDevicePressure(int p) {

@@ -90,7 +90,7 @@ public class MainActivity extends BaseActivity {
         mGson = new Gson();
         //JQDCanvas设置
         mJQDCanvas.init(mRootPath);
-        mJQDCanvas.setScale((float) (getDensity() * 0.03));
+        mJQDCanvas.setScale(this, 0.01f);
         //文件设置
         if (!hasPermission(mPermissions)) {
             requestPermission(mPermissions, AppConfig.PermissionType.CAMERA_PERMISSION);
@@ -99,9 +99,10 @@ public class MainActivity extends BaseActivity {
         //JQDPainter设置
         mPathDerive = JQDPainter.getInstance(this);
         mPathDerive.init(mRootPath);
-        mPathDerive.setScale((float) (getDensity() * 0.03));
-        mPathDerive.setImageBgColor(Color.BLACK);
-        mPathDerive.setPathColor(Color.WHITE);
+        Log.i(TAG, "getDensity(): " + getDensity());
+        mPathDerive.setScale(this, 0.01f);
+        mPathDerive.setImageBgColor(Color.WHITE);
+        mPathDerive.setPathColor(Color.BLACK);
         //点优化
         optimizePoints();
     }
@@ -225,11 +226,12 @@ public class MainActivity extends BaseActivity {
      */
     public void show(View show) {
         mJQDCanvas.clear();
-        mJQDCanvas.setImageBgColor(Color.RED);
+        mJQDCanvas.setImageBgColor(Color.WHITE);
+        mJQDCanvas.setLineColor(Color.BLACK);
         mJQDCanvas.post(new Runnable() {
             @Override
             public void run() {
-                CountDownTimer countDownTimer = new CountDownTimer(60 * 1000, 50) {
+                CountDownTimer countDownTimer = new CountDownTimer(6 * 1000, 50) {
                     @Override
                     public void onTick(long millisUntilFinished) {
                         if (mIndex <= uptimizedPoints.size() - 5) {
@@ -245,7 +247,7 @@ public class MainActivity extends BaseActivity {
 
                     @Override
                     public void onFinish() {
-
+                        mIndex = 0;
                     }
                 };
                 countDownTimer.start();

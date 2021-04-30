@@ -33,6 +33,12 @@ public class UIUtils {
         sDisplayHeightPixels = dm.heightPixels;
     }
 
+    public static float getDensity(Context context) {
+        DisplayMetrics dm = new DisplayMetrics();
+        ((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(dm);
+        return dm.density;
+    }
+
     public static int getDisplayWidthPixels(Context context) {
         if (context == null) {
             return -1;
