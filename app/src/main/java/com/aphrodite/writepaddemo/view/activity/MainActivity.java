@@ -231,7 +231,7 @@ public class MainActivity extends BaseActivity {
         mJQDCanvas.post(new Runnable() {
             @Override
             public void run() {
-                CountDownTimer countDownTimer = new CountDownTimer(6 * 1000, 50) {
+                CountDownTimer countDownTimer = new CountDownTimer(10 * 1000, 10) {
                     @Override
                     public void onTick(long millisUntilFinished) {
                         if (mIndex <= uptimizedPoints.size() - 5) {
