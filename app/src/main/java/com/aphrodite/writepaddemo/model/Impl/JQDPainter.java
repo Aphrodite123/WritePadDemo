@@ -238,13 +238,13 @@ public class JQDPainter implements IBasePathDerive {
                 continue;
             }
 
-            if (ugeePoint.pressure <= 0 && nextUgeePoint.pressure > 0) {
+            if (ugeePoint.state <= 0 && nextUgeePoint.state > 0) {
                 if (null != mPath) {
                     mPath.moveTo(ugeePoint.x * scale, ugeePoint.y * scale);
                 }
             }
 
-            if (ugeePoint.pressure > 0 && nextUgeePoint.pressure > 0) {
+            if (ugeePoint.state > 0 && nextUgeePoint.state > 0) {
                 if (null != mPaint) {
                     float width = lineWidth * calPressureScale(ugeePoint.pressure);
                     mPaint.setStrokeWidth(width);
@@ -266,7 +266,7 @@ public class JQDPainter implements IBasePathDerive {
                 }
             }
 
-            if (ugeePoint.pressure <= 0 && nextUgeePoint.pressure <= 0) {
+            if (ugeePoint.state <= 0 && nextUgeePoint.state <= 0) {
                 if (null != mPath) {
                     mPath.reset();
                 }

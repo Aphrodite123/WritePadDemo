@@ -91,6 +91,7 @@ public class MainActivity extends BaseActivity {
         //JQDCanvas设置
         mJQDCanvas.init(mRootPath);
         mJQDCanvas.setScale(this, 0.01f);
+        mJQDCanvas.setLineWidth((float) 6.0);
         //文件设置
         if (!hasPermission(mPermissions)) {
             requestPermission(mPermissions, AppConfig.PermissionType.CAMERA_PERMISSION);
@@ -99,10 +100,10 @@ public class MainActivity extends BaseActivity {
         //JQDPainter设置
         mPathDerive = JQDPainter.getInstance(this);
         mPathDerive.init(mRootPath);
-        Log.i(TAG, "getDensity(): " + getDensity());
         mPathDerive.setScale(this, 0.01f);
         mPathDerive.setImageBgColor(Color.WHITE);
         mPathDerive.setPathColor(Color.BLACK);
+        mPathDerive.setPathWidth(6);
         //点优化
         optimizePoints();
     }
