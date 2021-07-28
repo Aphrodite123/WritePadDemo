@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 
 import com.aphrodite.writepaddemo.model.Impl.JQDPainter;
@@ -37,7 +38,7 @@ public class JQDCanvas extends View {
     private int mHeight;
     //缩放比，默认：0.03 注意该值不可过大，否则很容易出现OOM
     private float scale = (float) 0.03;
-    private float mViewScale;
+    private float mViewScale = (float) 0.03;
 
     private Paint mPaint;
     private Path mPath;
@@ -89,6 +90,7 @@ public class JQDCanvas extends View {
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setAntiAlias(true);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
+        mPaint.setStrokeJoin(Paint.Join.ROUND);
     }
 
     private void initCanvas() {
@@ -103,7 +105,9 @@ public class JQDCanvas extends View {
         if (null == mBgBitmap) {
             mBgBitmap = Bitmap.createBitmap((int) (scale * deviceWidth), (int) (scale * deviceHeight), Bitmap.Config.ARGB_8888);
         }
-        mBitmap = BitmapUtils.drawBitmapBgColor(backgroundColor, mBgBitmap);
+        if (null == mBitmap) {
+            mBitmap = BitmapUtils.drawBitmapBgColor(backgroundColor, mBgBitmap);
+        }
         if (null == mCanvas) {
             mCanvas = new Canvas(mBitmap);
         }
@@ -152,7 +156,9 @@ public class JQDCanvas extends View {
         }
         if (ugeePoint.state > 0 && nextUgeePoint.state > 0) {
             if (null != mPaint) {
-                mPaint.setStrokeWidth(lineWidth * calPressureScale(nextUgeePoint.pressure));
+                float width = lineWidth * calPressureScale(ugeePoint.pressure);
+                Log.i("JQDCanvas", "width: " + width);
+                mPaint.setStrokeWidth(width);
                 mPaint.setColor(lineColor);
             }
             drawPath(new float[]{ugeePoint.x * mViewScale, ugeePoint.y * mViewScale, nextUgeePoint.x * mViewScale, nextUgeePoint.y * mViewScale}, mViewCanvas, mPaint);
@@ -176,6 +182,7 @@ public class JQDCanvas extends View {
         //S.i("补点：$insertCount")
         float dx = x / insertCount;
         float dy = y / insertCount;
+        Log.i("JQDCanvas", "(" + insertCount + "," + dx + "," + dy + ")");
         for (int i = 0; i < insertCount; i++) {
             float insertX = points[0] + i * dx;
             float insertY = points[1] + i * dy;
@@ -238,8 +245,6 @@ public class JQDCanvas extends View {
         Bitmap copyBitmap = mViewBitmap.copy(Bitmap.Config.ARGB_8888, true);
         if (null == mCacheBitmaps) {
             mCacheBitmaps = new ArrayList<>();
-        } else if (mCacheBitmaps.size() >= revokeTimes) {
-            mCacheBitmaps.remove(0);
         }
         mCacheBitmaps.add(copyBitmap);
     }
@@ -253,6 +258,7 @@ public class JQDCanvas extends View {
             return;
         }
         mViewBitmap = mCacheBitmaps.get(mCacheBitmaps.size() - 1);
+        mViewCanvas.setBitmap(mViewBitmap);
         invalidate();
     }
 
