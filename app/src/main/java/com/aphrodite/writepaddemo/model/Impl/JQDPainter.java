@@ -131,7 +131,7 @@ public class JQDPainter implements IBasePathDerive {
         }
         initCanvas();
         drawPath(mUgeePoints);
-        saveImage(mBitmap, path, name, Bitmap.CompressFormat.PNG, 100);
+        saveImage(mBitmap, path, name, Bitmap.CompressFormat.JPEG, 100);
     }
 
     @Override
@@ -258,8 +258,9 @@ public class JQDPainter implements IBasePathDerive {
                     num++;
                     if (num >= pointsPerFrame) {
                         pictureAbsPath = new StringBuilder();
-                        pictureAbsPath.append(index).append(".png");
-                        saveImage(mBitmap, mTempImagePath, pictureAbsPath.toString(), Bitmap.CompressFormat.PNG, 100);
+                        pictureAbsPath.append(index).append(".jpg");
+                        saveImage(mBitmap, mTempImagePath, pictureAbsPath.toString(),
+                                Bitmap.CompressFormat.JPEG, 100);
                         num = 0;
                         index++;
                     }
@@ -320,38 +321,39 @@ public class JQDPainter implements IBasePathDerive {
      * @param fileName
      */
     private void imageToVideo(String srcPath, String fileName) {
-        AvcExecuteAsyncTask.execute(new BitmapProvider(srcPath, getSize()), 16, new CreatorExecuteResponseHander() {
-            @Override
-            public void onSuccess(Object message) {
-                if (null != mCallBack) {
-                    mCallBack.success(fileName);
-                }
-                Log.d(TAG, "Enter to onSuccess.");
-            }
+        AvcExecuteAsyncTask.execute(new BitmapProvider(srcPath, getSize()), 3,
+                new CreatorExecuteResponseHander() {
+                    @Override
+                    public void onSuccess(Object message) {
+                        if (null != mCallBack) {
+                            mCallBack.success(fileName);
+                        }
+                        Log.d(TAG, "Enter to onSuccess.");
+                    }
 
-            @Override
-            public void onProgress(Object message) {
-                Log.d(TAG, "Enter to onProgress." + message);
-            }
+                    @Override
+                    public void onProgress(Object message) {
+                        Log.d(TAG, "Enter to onProgress." + message);
+                    }
 
-            @Override
-            public void onFailure(Object message) {
-                if (null != mCallBack) {
-                    mCallBack.failed(Error.ERROR_THREE);
-                }
-            }
+                    @Override
+                    public void onFailure(Object message) {
+                        if (null != mCallBack) {
+                            mCallBack.failed(Error.ERROR_THREE);
+                        }
+                    }
 
-            @Override
-            public void onStart() {
-                Log.d(TAG, "Enter to onStart.");
-            }
+                    @Override
+                    public void onStart() {
+                        Log.d(TAG, "Enter to onStart.");
+                    }
 
-            @Override
-            public void onFinish() {
-                Log.d(TAG, "Enter to onFinish.");
-                FileUtils.deleteFile(srcPath);
-            }
-        }, fileName);
+                    @Override
+                    public void onFinish() {
+                        Log.d(TAG, "Enter to onFinish.");
+                        FileUtils.deleteFile(srcPath);
+                    }
+                }, fileName);
     }
 
     private void imageToPdf(Bitmap bitmap, String filename) {

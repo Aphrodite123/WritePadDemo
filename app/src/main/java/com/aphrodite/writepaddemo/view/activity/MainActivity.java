@@ -48,7 +48,7 @@ public class MainActivity extends BaseActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     //生成图片点间隔数，默认：5
-    private static int DEFAULT_IMAGE_INTERVAL = 5;
+    private static int DEFAULT_IMAGE_INTERVAL = 40;
 
     private String[] mPermissions = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -232,7 +232,7 @@ public class MainActivity extends BaseActivity {
         mJQDCanvas.post(new Runnable() {
             @Override
             public void run() {
-                CountDownTimer countDownTimer = new CountDownTimer(10 * 1000, 10) {
+                CountDownTimer countDownTimer = new CountDownTimer(50 * 1000, 100) {
                     @Override
                     public void onTick(long millisUntilFinished) {
                         if (mIndex <= uptimizedPoints.size() - 5) {
@@ -304,6 +304,7 @@ public class MainActivity extends BaseActivity {
      * 路径转视频
      */
     public void pathToVideo(View pathToVideo) {
+        Log.i(TAG, "Start path to video.");
         mPathDerive.createVideoWithPoints("202103051538.mp4", DEFAULT_IMAGE_INTERVAL, new IPathCallBack() {
             @Override
             public void success(String path) {

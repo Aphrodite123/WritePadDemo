@@ -52,7 +52,6 @@ public class AvcEncoder {
     }
 
     private void init(int width, int height) {
-
         int bitRate0 = bitRate;
         if (bitRate == 0) {
             bitRate0 = width * height;
@@ -81,7 +80,6 @@ public class AvcEncoder {
         if (colorFormat <= 0) {
             colorFormat = MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420SemiPlanar;
         }
-
 
         MediaFormat mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height);//COLOR_FormatYUV420SemiPlanar
         mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, colorFormat);
@@ -173,7 +171,6 @@ public class AvcEncoder {
                 }
             }
         } finally {
-
             finish();
             mProcessable.onProcess(100);
         }

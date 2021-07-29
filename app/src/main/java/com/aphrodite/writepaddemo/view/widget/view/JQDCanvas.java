@@ -20,6 +20,7 @@ import com.aphrodite.writepaddemo.utils.UIUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import androidx.annotation.Nullable;
@@ -55,9 +56,9 @@ public class JQDCanvas extends View {
     private Bitmap mBitmap;
     private Canvas mCanvas;
 
-    //可撤销次数，默认为：5
-    private int revokeTimes = 5;
-    private List<Bitmap> mCacheBitmaps;
+    //可撤销次数，默认为：10
+    private int revokeTimes = 10;
+    private LinkedList<Bitmap> mCacheBitmaps;
 
     public JQDCanvas(Context context) {
         this(context, null);
@@ -244,7 +245,9 @@ public class JQDCanvas extends View {
         }
         Bitmap copyBitmap = mViewBitmap.copy(Bitmap.Config.ARGB_8888, true);
         if (null == mCacheBitmaps) {
-            mCacheBitmaps = new ArrayList<>();
+            mCacheBitmaps = new LinkedList<>();
+        } else if (mCacheBitmaps.size() >= revokeTimes) {
+            mCacheBitmaps.removeFirst();
         }
         mCacheBitmaps.add(copyBitmap);
     }
@@ -257,7 +260,7 @@ public class JQDCanvas extends View {
             clear();
             return;
         }
-        mViewBitmap = mCacheBitmaps.get(mCacheBitmaps.size() - 1);
+        mViewBitmap = mCacheBitmaps.getLast();
         mViewCanvas.setBitmap(mViewBitmap);
         invalidate();
     }
@@ -269,7 +272,7 @@ public class JQDCanvas extends View {
         if (null == mCacheBitmaps || mCacheBitmaps.size() <= 0) {
             return;
         }
-        mCacheBitmaps.remove(mCacheBitmaps.size() - 1);
+        mCacheBitmaps.removeLast();
         reDraw();
     }
 

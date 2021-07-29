@@ -2,6 +2,7 @@ package com.aphrodite.writepaddemo.model.provider;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.util.Log;
 
 import com.aphrodite.writepaddemo.utils.BitmapUtils;
 import com.aphrodite.writepaddemo.utils.FileUtils;
@@ -56,7 +57,9 @@ public class BitmapProvider implements IProviderExpand<Bitmap> {
             if (null == file) {
                 continue;
             }
+            Log.i("initData","Start bitmap.");
             Bitmap bitmap = BitmapUtils.decodeSampleBitmapFromResource(file.getAbsolutePath(), mScaleSize[0], mScaleSize[1]);
+            Log.i("initData","End bitmap.");
             mQueue.add(BitmapUtils.bitmapToBytes(bitmap));
             bitmap.recycle();
         }
