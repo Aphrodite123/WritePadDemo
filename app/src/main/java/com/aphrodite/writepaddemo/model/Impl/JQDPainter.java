@@ -60,6 +60,10 @@ public class JQDPainter implements IBasePathDerive {
     private int lineWidth;
     private int lineColor;
 
+    private BitmapProvider mBitmapProvider;
+    //视频帧率
+    private int fps;
+
     public static JQDPainter getInstance(Context context) {
         if (null == mInstance) {
             synchronized (JQDPainter.class) {
@@ -77,6 +81,7 @@ public class JQDPainter implements IBasePathDerive {
         this.backgroundColor = Color.WHITE;
         this.lineWidth = UIUtils.dip2px(context, 10);
         this.lineColor = Color.BLACK;
+        this.fps = 10;
         initData();
     }
 
@@ -94,12 +99,14 @@ public class JQDPainter implements IBasePathDerive {
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setAntiAlias(true);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
+
+        mBitmapProvider = new BitmapProvider();
     }
 
     private void initCanvas() {
         int width = (int) (scale * deviceWidth);
         int height = (int) (scale * deviceHeight);
-        mBgBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        mBgBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_4444);
         mBitmap = BitmapUtils.drawBitmapBgColor(backgroundColor, mBgBitmap);
         mCanvas = new Canvas(mBitmap);
     }
@@ -160,8 +167,8 @@ public class JQDPainter implements IBasePathDerive {
             return;
         }
         initCanvas();
+        imageToVideo(realPath);
         drawPath(mUgeePoints);
-        imageToVideo(mTempImagePath, realPath);
     }
 
     @Override
@@ -229,8 +236,6 @@ public class JQDPainter implements IBasePathDerive {
         UgeePoint ugeePoint = null;
         UgeePoint nextUgeePoint = null;
         int num = 0;
-        int index = 1;
-        StringBuilder pictureAbsPath = null;
         for (int i = 0; i < ugeePoints.size() - 1; i++) {
             ugeePoint = ugeePoints.get(i);
             nextUgeePoint = ugeePoints.get(i + 1);
@@ -257,12 +262,9 @@ public class JQDPainter implements IBasePathDerive {
                 if (!mIsGetImage) {
                     num++;
                     if (num >= pointsPerFrame) {
-                        pictureAbsPath = new StringBuilder();
-                        pictureAbsPath.append(index).append(".jpg");
-                        saveImage(mBitmap, mTempImagePath, pictureAbsPath.toString(),
-                                Bitmap.CompressFormat.JPEG, 100);
+                        Bitmap bitmap = mBitmap.copy(Bitmap.Config.ARGB_4444, true);
+                        mBitmapProvider.setQueue(bitmap);
                         num = 0;
-                        index++;
                     }
                 }
             }
@@ -320,11 +322,14 @@ public class JQDPainter implements IBasePathDerive {
      * @param path
      * @param fileName
      */
-    private void imageToVideo(String srcPath, String fileName) {
-        AvcExecuteAsyncTask.execute(new BitmapProvider(srcPath, getSize()), 3,
+    private void imageToVideo(String fileName) {
+        AvcExecuteAsyncTask.execute(mBitmapProvider, fps,
                 new CreatorExecuteResponseHander() {
                     @Override
                     public void onSuccess(Object message) {
+                        if (null != mBitmapProvider) {
+                            mBitmapProvider.finish();
+                        }
                         if (null != mCallBack) {
                             mCallBack.success(fileName);
                         }
@@ -338,6 +343,9 @@ public class JQDPainter implements IBasePathDerive {
 
                     @Override
                     public void onFailure(Object message) {
+                        if (null != mBitmapProvider) {
+                            mBitmapProvider.finish();
+                        }
                         if (null != mCallBack) {
                             mCallBack.failed(Error.ERROR_THREE);
                         }
@@ -350,8 +358,10 @@ public class JQDPainter implements IBasePathDerive {
 
                     @Override
                     public void onFinish() {
+                        if (null != mBitmapProvider) {
+                            mBitmapProvider.finish();
+                        }
                         Log.d(TAG, "Enter to onFinish.");
-                        FileUtils.deleteFile(srcPath);
                     }
                 }, fileName);
     }
@@ -472,6 +482,10 @@ public class JQDPainter implements IBasePathDerive {
         if (null != mPaint) {
             mPaint.setStrokeCap(cap);
         }
+    }
+
+    public void setFps(int fps) {
+        this.fps = fps;
     }
 
     public void destroy() {

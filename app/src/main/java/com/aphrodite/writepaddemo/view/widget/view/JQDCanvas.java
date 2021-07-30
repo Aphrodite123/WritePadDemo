@@ -257,7 +257,6 @@ public class JQDCanvas extends View {
      */
     public void reDraw() {
         if (null == mCacheBitmaps || mCacheBitmaps.size() <= 0) {
-            clear();
             return;
         }
         mViewBitmap = mCacheBitmaps.getLast();
@@ -269,7 +268,7 @@ public class JQDCanvas extends View {
      * 撤销
      */
     public void revoke() {
-        if (null == mCacheBitmaps || mCacheBitmaps.size() <= 0) {
+        if (!canRevoke()) {
             return;
         }
         mCacheBitmaps.removeLast();

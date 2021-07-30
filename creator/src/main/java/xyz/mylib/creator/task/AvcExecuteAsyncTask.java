@@ -10,7 +10,7 @@ import xyz.mylib.creator.encoder.AvcEncoder;
 import xyz.mylib.creator.handler.CreatorExecuteResponseHander;
 
 public class AvcExecuteAsyncTask extends BaseExecuteAsyncTask implements Processable {
-
+    private AvcEncoder mAvcEncoder;
     private final int bitRate;
 
     private AvcExecuteAsyncTask(IProvider<Bitmap> provider, int fps, CreatorExecuteResponseHander<String> hander, String path, int bitRate) {
@@ -20,7 +20,8 @@ public class AvcExecuteAsyncTask extends BaseExecuteAsyncTask implements Process
 
     @Override
     protected String doInBackground(Void... voids) {
-        new AvcEncoder(mProvider, fps, new File(mPath), bitRate, this).start();
+        mAvcEncoder = new AvcEncoder(mProvider, fps, new File(mPath), bitRate, this);
+        mAvcEncoder.start();
         return "";
     }
 
@@ -42,4 +43,5 @@ public class AvcExecuteAsyncTask extends BaseExecuteAsyncTask implements Process
     public void onProcess(int process) {
         _publishProgress(process);
     }
+
 }

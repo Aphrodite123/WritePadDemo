@@ -214,7 +214,7 @@ public class BitmapUtils {
         byte[] buffer = null;
         try {
             out = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out);
             out.flush();
             buffer = out.toByteArray();
         } catch (IOException e) {

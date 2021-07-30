@@ -47,5 +47,4 @@ public abstract class BaseExecuteAsyncTask extends AsyncTask<Void, Integer, Stri
         publishProgress(process);
     }
 
-
 }

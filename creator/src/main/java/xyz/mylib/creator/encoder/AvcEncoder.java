@@ -1,6 +1,5 @@
 package xyz.mylib.creator.encoder;
 
-
 import android.graphics.Bitmap;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -18,9 +17,8 @@ import xyz.mylib.creator.IProvider;
 import xyz.mylib.creator.IProviderExpand;
 import xyz.mylib.creator.Processable;
 
-
 public class AvcEncoder {
-    private final static String TAG = "MeidaCodec";
+    private final static String TAG = AvcEncoder.class.getSimpleName();
 
     private final int mFrameRate;
     private final File out;
@@ -30,12 +28,12 @@ public class AvcEncoder {
 
     private MediaCodec mediaCodec;
     //    public byte[] configByte;
+    private boolean isStart;
     public boolean isRunning;
     private MediaMuxer mediaMuxer;
     private int mTrackIndex;
     private boolean mMuxerStarted;
     private int colorFormat;
-
 
     public AvcEncoder(IProvider<Bitmap> provider, int framerate, File out, int bitRate, Processable processable) {
         this.mFrameRate = framerate;
@@ -44,11 +42,10 @@ public class AvcEncoder {
         this.mProvider = provider;
         this.mProcessable = processable;
 
+        this.isStart = true;
         this.isRunning = false;
         this.mTrackIndex = 0;
         this.mMuxerStarted = false;
-
-
     }
 
     private void init(int width, int height) {
@@ -131,8 +128,8 @@ public class AvcEncoder {
         return capabilities.colorFormats;
     }
 
-
     public void finish() {
+        isStart = false;
         isRunning = false;
         if (mediaCodec != null) {
             mediaCodec.stop();
@@ -148,29 +145,29 @@ public class AvcEncoder {
                 e.printStackTrace();
             }
         }
-
-        if(mProvider instanceof IProviderExpand){
+        if (mProvider instanceof IProviderExpand) {
             ((IProviderExpand<Bitmap>) mProvider).finish();
         }
-
     }
 
     public void start() {
         try {
-            if(mProvider instanceof IProviderExpand){
+            if (mProvider instanceof IProviderExpand) {
                 ((IProviderExpand<Bitmap>) mProvider).prepare();
             }
-
-            if (mProvider.size() > 0) {
-                mProcessable.onProcess(1);
-                Bitmap bitmap = mProvider.next();
-                if (bitmap != null) {
-                    this.init(getSize(bitmap.getWidth()), getSize(bitmap.getHeight()));
-                    mProcessable.onProcess(2);
-                    this.run(bitmap);
+            while (isStart) {
+                if (mProvider.size() > 0) {
+                    mProcessable.onProcess(1);
+                    Bitmap bitmap = mProvider.next();
+                    if (bitmap != null) {
+                        this.init(getSize(bitmap.getWidth()), getSize(bitmap.getHeight()));
+                        mProcessable.onProcess(2);
+                        this.run(bitmap);
+                        isStart = false;
+                    }
                 }
             }
-        } finally {
+        } catch (Exception e) {
             finish();
             mProcessable.onProcess(100);
         }
@@ -211,10 +208,7 @@ public class AvcEncoder {
                 encodeYUV420PP(yuv, argb, inputWidth, inputHeight);
                 break;
         }
-
-
 //        scaled.recycle();
-
         return yuv;
     }
 
@@ -278,15 +272,11 @@ public class AvcEncoder {
                 V = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128; // Previously U
                 U = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128; // Previously V
 
-
                 yuv420sp[yIndex++] = (byte) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
                 if (j % 2 == 0 && index % 2 == 0) {
                     yuv420sp[vIndex++] = (byte) ((U < 0) ? 0 : ((U > 255) ? 255 : U));
                     yuv420sp[uIndex++] = (byte) ((V < 0) ? 0 : ((V > 255) ? 255 : V));
                 }
-
-
-
                 index++;
             }
         }
@@ -370,7 +360,6 @@ public class AvcEncoder {
             }
         }
     }
-
 
     private void drainEncoder(boolean endOfStream, MediaCodec.BufferInfo bufferInfo) {
         final int TIMEOUT_USEC = 10000;
@@ -471,22 +460,19 @@ public class AvcEncoder {
         }
 
         while (isRunning) {
-
             int inputBufferIndex = mediaCodec.dequeueInputBuffer(TIMEOUT_USEC);
             if (inputBufferIndex >= 0) {
                 long ptsUsec = computePresentationTime(generateIndex);
-                if (generateIndex >= mProvider.size()) {
-                    mediaCodec.queueInputBuffer(inputBufferIndex, 0, 0, ptsUsec,
-                            MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-                    isRunning = false;
+                if (mProvider.size() <= 0) {
+                    mediaCodec.queueInputBuffer(inputBufferIndex, 0, 0, ptsUsec, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                     drainEncoder(true, info);
-
+                    isRunning = false;
                 } else {
                     if (bitmap == null) {
                         bitmap = mProvider.next();
                     }
                     byte[] input = getNV12(getSize(bitmap.getWidth()), getSize(bitmap.getHeight()), bitmap);//AvcEncoder.this.getNV21(bitmap);
-                    if(mProvider instanceof IProviderExpand){
+                    if (mProvider instanceof IProviderExpand) {
                         ((IProviderExpand<Bitmap>) mProvider).finishItem(bitmap);
                     }
                     bitmap = null;
@@ -503,19 +489,16 @@ public class AvcEncoder {
                     mediaCodec.queueInputBuffer(inputBufferIndex, 0, input.length, ptsUsec, 0);
                     drainEncoder(false, info);
                 }
-
                 mProcessable.onProcess((int) (generateIndex * 96 / mProvider.size()) + 2);
-
                 generateIndex++;
             } else {
-                Log.i(TAG, "input buffer not available");
+                Log.i(TAG, "input buffer not available.");
                 try {
                     Thread.sleep(50);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
-
 //            byte[] input = null;
 //
 //            if (input != null) {
