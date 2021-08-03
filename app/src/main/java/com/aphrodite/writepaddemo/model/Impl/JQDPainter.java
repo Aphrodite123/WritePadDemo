@@ -275,6 +275,12 @@ public class JQDPainter implements IBasePathDerive {
                 }
             }
         }
+
+        //校验是否添加最后一帧
+        if (!mIsGetImage && num > 0) {
+            Bitmap bitmap = mBitmap.copy(Bitmap.Config.ARGB_4444, true);
+            mBitmapProvider.setQueue(bitmap);
+        }
     }
 
     private void drawPath(float[] points, Canvas canvas, Paint paint) {

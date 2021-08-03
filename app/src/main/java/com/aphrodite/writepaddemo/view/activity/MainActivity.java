@@ -66,6 +66,7 @@ public class MainActivity extends BaseActivity {
     private JQDPainter mPathDerive;
     private List<UgeePoint> uptimizedPoints = new ArrayList<>();
     private int mIndex = 0;
+    private CountDownTimer mCountDownTimer;
 
     @Override
     protected int getViewId() {
@@ -104,7 +105,7 @@ public class MainActivity extends BaseActivity {
         mPathDerive.setImageBgColor(Color.WHITE);
         mPathDerive.setPathColor(Color.BLACK);
         mPathDerive.setPathWidth(10);
-        mPathDerive.setFps(10);
+        mPathDerive.setFps(3);
         //点优化
         optimizePoints();
     }
@@ -230,10 +231,13 @@ public class MainActivity extends BaseActivity {
         mJQDCanvas.clear();
         mJQDCanvas.setImageBgColor(Color.WHITE);
         mJQDCanvas.setLineColor(Color.BLACK);
+        if (null != mCountDownTimer) {
+            mCountDownTimer.cancel();
+        }
         mJQDCanvas.post(new Runnable() {
             @Override
             public void run() {
-                CountDownTimer countDownTimer = new CountDownTimer(100 * 1000, 10) {
+                mCountDownTimer = new CountDownTimer(30 * 1000, 10) {
                     @Override
                     public void onTick(long millisUntilFinished) {
                         if (mIndex <= uptimizedPoints.size() - 5) {
@@ -252,9 +256,23 @@ public class MainActivity extends BaseActivity {
                         mIndex = 0;
                     }
                 };
-                countDownTimer.start();
+                mCountDownTimer.start();
             }
         });
+    }
+
+    public void start(View start) {
+        if (null == mCountDownTimer) {
+            return;
+        }
+        mCountDownTimer.start();
+    }
+
+    public void pause(View pause) {
+        if (null == mCountDownTimer) {
+            return;
+        }
+        mCountDownTimer.cancel();
     }
 
     /**
@@ -278,6 +296,7 @@ public class MainActivity extends BaseActivity {
      * 清除
      */
     public void clear(View clear) {
+        mCountDownTimer.cancel();
         mJQDCanvas.clear();
     }
 

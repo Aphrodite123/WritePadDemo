@@ -19,7 +19,6 @@ import com.aphrodite.writepaddemo.utils.UIUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -149,16 +148,12 @@ public class JQDCanvas extends View {
         if (null == ugeePoint || null == nextUgeePoint) {
             return;
         }
-        if (ugeePoint.state > 0 && nextUgeePoint.state <= 0) {
-            saveBitmap();
-        }
         if (ugeePoint.state <= 0 && nextUgeePoint.state > 0) {
             mPath.moveTo(ugeePoint.x * mViewScale, ugeePoint.y * mViewScale);
         }
         if (ugeePoint.state > 0 && nextUgeePoint.state > 0) {
             if (null != mPaint) {
                 float width = lineWidth * calPressureScale(ugeePoint.pressure);
-                Log.i("JQDCanvas", "width: " + width);
                 mPaint.setStrokeWidth(width);
                 mPaint.setColor(lineColor);
             }
@@ -169,6 +164,9 @@ public class JQDCanvas extends View {
             if (null != mPath) {
                 mPath.reset();
             }
+        }
+        if (ugeePoint.state > 0 && nextUgeePoint.state <= 0) {
+            saveBitmap();
         }
     }
 
@@ -183,7 +181,6 @@ public class JQDCanvas extends View {
         //S.i("补点：$insertCount")
         float dx = x / insertCount;
         float dy = y / insertCount;
-        Log.i("JQDCanvas", "(" + insertCount + "," + dx + "," + dy + ")");
         for (int i = 0; i < insertCount; i++) {
             float insertX = points[0] + i * dx;
             float insertY = points[1] + i * dy;
@@ -246,7 +243,7 @@ public class JQDCanvas extends View {
         Bitmap copyBitmap = mViewBitmap.copy(Bitmap.Config.ARGB_8888, true);
         if (null == mCacheBitmaps) {
             mCacheBitmaps = new LinkedList<>();
-        } else if (mCacheBitmaps.size() >= revokeTimes) {
+        } else if (mCacheBitmaps.size() > revokeTimes) {
             mCacheBitmaps.removeFirst();
         }
         mCacheBitmaps.add(copyBitmap);
@@ -259,7 +256,8 @@ public class JQDCanvas extends View {
         if (null == mCacheBitmaps || mCacheBitmaps.size() <= 0) {
             return;
         }
-        mViewBitmap = mCacheBitmaps.getLast();
+        Bitmap copyBitmap = mCacheBitmaps.getLast().copy(Bitmap.Config.ARGB_8888, true);
+        mViewBitmap = copyBitmap;
         mViewCanvas.setBitmap(mViewBitmap);
         invalidate();
     }
