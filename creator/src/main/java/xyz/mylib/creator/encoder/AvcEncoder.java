@@ -27,7 +27,6 @@ public class AvcEncoder {
     private final Processable mProcessable;
 
     private MediaCodec mediaCodec;
-    //    public byte[] configByte;
     private boolean isStart;
     public boolean isRunning;
     private MediaMuxer mediaMuxer;
@@ -157,11 +156,9 @@ public class AvcEncoder {
             }
             while (isStart) {
                 if (mProvider.size() > 0) {
-                    mProcessable.onProcess(1);
                     Bitmap bitmap = mProvider.next();
                     if (bitmap != null) {
                         this.init(getSize(bitmap.getWidth()), getSize(bitmap.getHeight()));
-                        mProcessable.onProcess(2);
                         this.run(bitmap);
                         isStart = false;
                     }
@@ -185,11 +182,8 @@ public class AvcEncoder {
     }
 
     private byte[] getNV12(int inputWidth, int inputHeight, Bitmap scaled) {
-        // Reference (Variation) : https://gist.github.com/wobbals/5725412
-
         int[] argb = new int[inputWidth * inputHeight];
 
-        //Log.i(TAG, "scaled : " + scaled);
         scaled.getPixels(argb, 0, inputWidth, 0, 0, inputWidth, inputHeight);
 
         byte[] yuv = new byte[inputWidth * inputHeight * 3 / 2];
@@ -208,7 +202,6 @@ public class AvcEncoder {
                 encodeYUV420PP(yuv, argb, inputWidth, inputHeight);
                 break;
         }
-//        scaled.recycle();
         return yuv;
     }
 
@@ -227,9 +220,6 @@ public class AvcEncoder {
                 R = (argb[index] & 0xff0000) >> 16;
                 G = (argb[index] & 0xff00) >> 8;
                 B = (argb[index] & 0xff) >> 0;
-//                R = (argb[index] & 0xff000000) >>> 24;
-//                G = (argb[index] & 0xff0000) >> 16;
-//                B = (argb[index] & 0xff00) >> 8;
 
                 // well known RGB to YUV algorithm
                 Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
@@ -263,9 +253,6 @@ public class AvcEncoder {
                 R = (argb[index] & 0xff0000) >> 16;
                 G = (argb[index] & 0xff00) >> 8;
                 B = (argb[index] & 0xff) >> 0;
-//                R = (argb[index] & 0xff000000) >>> 24;
-//                G = (argb[index] & 0xff0000) >> 16;
-//                B = (argb[index] & 0xff00) >> 8;
 
                 // well known RGB to YUV algorithm
                 Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
@@ -286,7 +273,6 @@ public class AvcEncoder {
         final int frameSize = width * height;
 
         int yIndex = 0;
-//        int uvIndex = frameSize;
 
         int a, R, G, B, Y, U, V;
         int index = 0;
@@ -297,9 +283,6 @@ public class AvcEncoder {
                 R = (argb[index] & 0xff0000) >> 16;
                 G = (argb[index] & 0xff00) >> 8;
                 B = (argb[index] & 0xff) >> 0;
-//                R = (argb[index] & 0xff000000) >>> 24;
-//                G = (argb[index] & 0xff0000) >> 16;
-//                B = (argb[index] & 0xff00) >> 8;
 
                 // well known RGB to YUV algorithm
                 Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
@@ -320,7 +303,6 @@ public class AvcEncoder {
     }
 
     private void encodeYUV420PP(byte[] yuv420sp, int[] argb, int width, int height) {
-
         int yIndex = 0;
         int vIndex = yuv420sp.length / 2;
 
@@ -333,9 +315,6 @@ public class AvcEncoder {
                 R = (argb[index] & 0xff0000) >> 16;
                 G = (argb[index] & 0xff00) >> 8;
                 B = (argb[index] & 0xff) >> 0;
-//                R = (argb[index] & 0xff000000) >>> 24;
-//                G = (argb[index] & 0xff0000) >> 16;
-//                B = (argb[index] & 0xff00) >> 8;
 
                 // well known RGB to YUV algorithm
                 Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
@@ -440,6 +419,7 @@ public class AvcEncoder {
                     if (!endOfStream) {
                         Log.i(TAG, "reached end of stream unexpectedly");
                     } else {
+                        finish();
                         Log.i(TAG, "end of stream reached");
                     }
                     break; // out of while
@@ -475,6 +455,7 @@ public class AvcEncoder {
                     if (mProvider instanceof IProviderExpand) {
                         ((IProviderExpand<Bitmap>) mProvider).finishItem(bitmap);
                     }
+                    bitmap.recycle();
                     bitmap = null;
                     //有效的空的缓存区
                     ByteBuffer inputBuffer = null;
@@ -489,7 +470,6 @@ public class AvcEncoder {
                     mediaCodec.queueInputBuffer(inputBufferIndex, 0, input.length, ptsUsec, 0);
                     drainEncoder(false, info);
                 }
-                mProcessable.onProcess((int) (generateIndex * 96 / mProvider.size()) + 2);
                 generateIndex++;
             } else {
                 Log.i(TAG, "input buffer not available.");
@@ -499,72 +479,6 @@ public class AvcEncoder {
                     e.printStackTrace();
                 }
             }
-//            byte[] input = null;
-//
-//            if (input != null) {
-//                try {
-//                    // 拿到有空闲的输入缓存区下标
-//                    long ptsUsec = 0l;
-//                    if (inputBufferIndex >= 0) {
-//                        ptsUsec = computePresentationTime(generateIndex);
-//                        //有效的空的缓存区
-//                        ByteBuffer inputBuffer = mediaCodec.getInputBuffer(inputBufferIndex);//inputBuffers[inputBufferIndex];
-//                        inputBuffer.clear();
-//                        inputBuffer.put(input);
-//                        //将数据放到编码队列
-//                        mediaCodec.queueInputBuffer(inputBufferIndex, 0, input.length, ptsUsec, 0);
-//                        generateIndex += 1;
-//                    }
-//
-//                    MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-//
-//                    //得到成功编码后输出的out buffer Id
-//                    int outputBufferIndex = mediaCodec.dequeueOutputBuffer(bufferInfo, TIMEOUT_USEC);
-//                    while (outputBufferIndex >= 0) {
-//                        //Log.i("AvcEncoder", "Get H264 Buffer Success! flag = "+bufferInfo.flags+",pts = "+bufferInfo.presentationTimeUs+"");
-//                        ByteBuffer outputBuffer = mediaCodec.getOutputBuffer(outputBufferIndex);//outputBuffers[outputBufferIndex];
-//                        byte[] outData = new byte[bufferInfo.size];
-//                        outputBuffer.get(outData);
-//
-//                        if (bufferInfo.flags == 2) {
-//                            configByte = new byte[bufferInfo.size];
-//                            configByte = outData;
-//                        } else if (bufferInfo.flags == 1) {
-//                            byte[] keyframe = new byte[bufferInfo.size + configByte.length];
-//                            System.arraycopy(configByte, 0, keyframe, 0, configByte.length);
-//                            System.arraycopy(outData, 0, keyframe, configByte.length, outData.length);
-//
-////                            outputStream.write(keyframe, 0, keyframe.length);
-//                        } else {
-////                            outputStream.write(outData, 0, outData.length);
-//                        }
-//
-//                        outputBuffer.position(bufferInfo.offset);
-//                        outputBuffer.limit(bufferInfo.offset + bufferInfo.size);
-//                        // 将编码后的数据写入到MP4复用器
-//                        mediaMuxer.writeSampleData(mTrackIndex, outputBuffer, bufferInfo);
-//
-//                        //释放output buffer
-//                        mediaCodec.releaseOutputBuffer(outputBufferIndex, false);
-//                        outputBufferIndex = mediaCodec.dequeueOutputBuffer(bufferInfo, TIMEOUT_USEC);
-//                    }
-//
-//                    if (outputBufferIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
-//                        MediaFormat mediaFormat = mediaCodec.getOutputFormat();
-//                        mTrackIndex = mediaMuxer.addTrack(mediaFormat);
-//                        mediaMuxer.start();
-//                    }
-//
-//                } catch (Throwable t) {
-//                    t.printStackTrace();
-//                }
-//            } else {
-//                try {
-//                    Thread.sleep(500);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//            }
         }
     }
 }
