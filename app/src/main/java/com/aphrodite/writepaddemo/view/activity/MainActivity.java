@@ -48,7 +48,7 @@ public class MainActivity extends BaseActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     //生成图片点间隔数，默认：5
-    private static int DEFAULT_IMAGE_INTERVAL = 20;
+    private static int DEFAULT_IMAGE_INTERVAL = 40;
 
     private String[] mPermissions = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -105,7 +105,7 @@ public class MainActivity extends BaseActivity {
         mPathDerive.setImageBgColor(Color.WHITE);
         mPathDerive.setPathColor(Color.BLACK);
         mPathDerive.setPathWidth(4);
-        mPathDerive.setFps(3);
+        mPathDerive.setFps(10);
         //点优化
         optimizePoints();
     }
@@ -144,6 +144,7 @@ public class MainActivity extends BaseActivity {
         }
         mPointsBean = mGson.fromJson(line, PointsBean.class);
         List<UgeePoint> elements = processPoints();
+        Log.i(TAG, "点长度：" + elements.size());
         mUgeePenOptimizeClass = new UgeePenOptimizeClass(new cn.ugee.mi.optimize.OnPenCallBack() {
             @Override
             public void onPenOptimizeDate(UgeePoint ugeePoint) {
@@ -237,7 +238,7 @@ public class MainActivity extends BaseActivity {
         mJQDCanvas.post(new Runnable() {
             @Override
             public void run() {
-                mCountDownTimer = new CountDownTimer(30 * 1000, 10) {
+                mCountDownTimer = new CountDownTimer(30 * 1000, 1) {
                     @Override
                     public void onTick(long millisUntilFinished) {
                         if (mIndex <= uptimizedPoints.size() - 5) {
@@ -367,16 +368,41 @@ public class MainActivity extends BaseActivity {
     public void textToPdf(View textToPdf) {
         Map<String, Object> map = new HashMap<>();
         Typeface typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL);
-        map.put(PdfImpl.ParamsKey.TEXT_SIZE, 20);
+        map.put(PdfImpl.ParamsKey.TEXT_SIZE, 10);
         map.put(PdfImpl.ParamsKey.TEXT_COLOR, Color.BLACK);
         map.put(PdfImpl.ParamsKey.TYPEFACE, typeface);
         map.put(PdfImpl.ParamsKey.WIDTH, 320);
-        map.put(PdfImpl.ParamsKey.HEIGHT, 260);
+        map.put(PdfImpl.ParamsKey.HEIGHT, 2000);
         map.put(PdfImpl.ParamsKey.MARGIN_HORIZONTAL, 20);
         map.put(PdfImpl.ParamsKey.MARGIN_VERTICAL, 20);
         String text = "Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 " +
                 "Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello " +
-                "阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加";
+                "阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加基本概念\n" +
+                "HTTP（HyperText Transfer Protocol：超文本传输协议）是一种用于分布式、协作式和超媒体信息系统的应用层协议。 简单来说就是一种发布和接收 HTML 页面的方法，被用于在 Web 浏览器和网站服务器之间传递信息。\n" +
+                "\n" +
+                "HTTP 默认工作在 TCP 协议 80 端口，用户访问网站 http:// 打头的都是标准 HTTP 服务。\n" +
+                "\n" +
+                "HTTP 协议以明文方式发送内容，不提供任何方式的数据加密，如果攻击者截取了Web浏览器和网站服务器之间的传输报文，就可以直接读懂其中的信息，因此，HTTP协议不适合传输一些敏感信息，比如：信用卡号、密码等支付信息。\n" +
+                "\n" +
+                "HTTPS（Hypertext Transfer Protocol Secure：超文本传输安全协议）是一种透过计算机网络进行安全通信的传输协议。HTTPS 经由 HTTP 进行通信，但利用 SSL/TLS 来加密数据包。HTTPS 开发的主要目的，是提供对网站服务器的身份认证，保护交换数据的隐私与完整性。\n" +
+                "\n" +
+                "HTTPS 默认工作在 TCP 协议443端口，它的工作流程一般如以下方式：\n" +
+                "\n" +
+                "1、TCP 三次同步握手\n" +
+                "2、客户端验证服务器数字证书\n" +
+                "3、DH 算法协商对称加密算法的密钥、hash 算法的密钥\n" +
+                "4、SSL 安全加密隧道协商完成\n" +
+                "5、网页以加密的方式传输，用协商的对称加密算法和密钥加密，保证数据机密性；用协商的hash算法进行数据完整性保护，保证数据不被篡改。\n" +
+                "截至 2018 年 6 月，Alexa 排名前 100 万的网站中有 34.6% 使用 HTTPS 作为默认值，互联网 141387 个最受欢迎网站的 43.1% 具有安全实施的 HTTPS，以及 45% 的页面加载（透过Firefox纪录）使用HTTPS。2017 年3 月，中国注册域名总数的 0.11％使用 HTTPS。\n" +
+                "\n" +
+                "根据 Mozilla 统计，自 2017 年 1 月以来，超过一半的网站流量被加密。\n" +
+                "\n" +
+                "HTTP 与 HTTPS 区别\n" +
+                "HTTP 明文传输，数据都是未加密的，安全性较差，HTTPS（SSL+HTTP） 数据传输过程是加密的，安全性较好。\n" +
+                "使用 HTTPS 协议需要到 CA（Certificate Authority，数字证书认证机构） 申请证书，一般免费证书较少，因而需要一定费用。证书颁发机构如：Symantec、Comodo、GoDaddy 和 GlobalSign 等。\n" +
+                "HTTP 页面响应速度比 HTTPS 快，主要是因为 HTTP 使用 TCP 三次握手建立连接，客户端和服务器需要交换 3 个包，而 HTTPS除了 TCP 的三个包，还要加上 ssl 握手需要的 9 个包，所以一共是 12 个包。\n" +
+                "http 和 https 使用的是完全不同的连接方式，用的端口也不一样，前者是 80，后者是 443。\n" +
+                "HTTPS 其实就是建构在 SSL/TLS 之上的 HTTP 协议，所以，要比较 HTTPS 比 HTTP 要更耗费服务器资源。20210903";
         mPathDerive.createPDFWithText(text, "202103051538.pdf", map,
                 new IPathCallBack() {
                     @Override
