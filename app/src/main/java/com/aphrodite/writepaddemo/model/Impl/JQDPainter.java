@@ -6,7 +6,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Typeface;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -20,9 +19,16 @@ import com.aphrodite.writepaddemo.utils.UIUtils;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
 
+import cn.ugee.mi.optimize.OnPenCallBack;
+import cn.ugee.mi.optimize.UgeePenOptimizeClass;
 import cn.ugee.mi.optimize.UgeePoint;
 import xyz.mylib.creator.handler.CreatorExecuteResponseHander;
 import xyz.mylib.creator.task.AvcExecuteAsyncTask;
@@ -34,68 +40,53 @@ import xyz.mylib.creator.task.AvcExecuteAsyncTask;
 public class JQDPainter implements IBasePathDerive {
     private static final String TAG = JQDPainter.class.getSimpleName();
     private Context mContext;
-    private static JQDPainter mInstance = null;
     private boolean mIsGetImage = true;
+
+    private float mBackgroundColor;
+    private float mLineColor;
+    private float mLineWidth;
+    //缩放比，默认：0.03 注意该值不可过大，否则很容易出现OOM
+    private float mScale = (float) 0.01;
+    private float maxPressure = 0x07FF;
+    private float mPointsPerFrame = 20;
+    private float mFps = 10;
+    private float mWidth = 0x5078;
+    private float mHeight = 0x6B08;
+
+    private ExecutorService mExecutors;
+    private FutureTask mFutureTask;
 
     //文件根目录
     private String mRootPath;
-    private String mTempImagePath;
     private List<UgeePoint> mUgeePoints;
     private IPathCallBack mCallBack;
-
-    private int deviceWidth = 0x6B06;
-    private int deviceHeight = 0x5014;
-    private int maxPressure = 0x07FF;
-    //缩放比，默认：0.03 注意该值不可过大，否则很容易出现OOM
-    private float scale = (float) 0.03;
 
     private Bitmap mBitmap;
     private Bitmap mBgBitmap;
     private Canvas mCanvas;
-    private int pointsPerFrame;
-
     private Paint mPaint;
     private Path mPath;
-    private int backgroundColor;
-    private int lineWidth;
-    private int lineColor;
-
     private BitmapProvider mBitmapProvider;
-    //视频帧率
-    private int fps;
 
-    public static JQDPainter getInstance(Context context) {
-        if (null == mInstance) {
-            synchronized (JQDPainter.class) {
-                if (null == mInstance) {
-                    mInstance = new JQDPainter(context);
-                }
-            }
-        }
-        return mInstance;
-    }
-
-    private JQDPainter(Context context) {
+    public JQDPainter(Context context) {
         this.mContext = context;
-        this.mUgeePoints = new ArrayList<>();
-        this.backgroundColor = Color.WHITE;
-        this.lineWidth = UIUtils.dip2px(context, 10);
-        this.lineColor = Color.BLACK;
-        this.fps = 10;
+        this.mBackgroundColor = Color.WHITE;
+        this.mLineWidth = UIUtils.dip2px(context, 10);
+        this.mLineColor = Color.BLACK;
+        this.mFps = 10;
         initData();
     }
 
     public void init(String rootPath) {
         this.mRootPath = rootPath;
-        this.mTempImagePath = rootPath + "temp/";
     }
 
     private void initData() {
         mPaint = new Paint();
         mPath = new Path();
 
-        mPaint.setStrokeWidth(lineWidth);
-        mPaint.setColor(lineColor);
+        mPaint.setStrokeWidth(mLineWidth);
+        mPaint.setColor((int) mLineColor);
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setAntiAlias(true);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
@@ -104,100 +95,88 @@ public class JQDPainter implements IBasePathDerive {
     }
 
     private void initCanvas() {
-        int width = (int) (scale * deviceWidth);
-        int height = (int) (scale * deviceHeight);
+        int width = (int) (mScale * mWidth);
+        int height = (int) (mScale * mHeight);
         mBgBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_4444);
-        mBitmap = BitmapUtils.drawBitmapBgColor(backgroundColor, mBgBitmap);
+        mBitmap = BitmapUtils.drawBitmapBgColor((int) mBackgroundColor, mBgBitmap);
         mCanvas = new Canvas(mBitmap);
     }
 
     @Override
-    public void createImageWithPoints(String filename, IPathCallBack callBack) {
-        this.mIsGetImage = true;
-        this.mCallBack = callBack;
-        String realPath = mRootPath + filename;
-        if (TextUtils.isEmpty(realPath)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_FIVE);
+    public void createMediaWithPoints(List<UgeePoint> ugeePoints, String type, String filename, Map<String, Object> params, IPathCallBack callBack) {
+        setConfig(params);
+        mExecutors = Executors.newSingleThreadExecutor();
+        mFutureTask = new FutureTask(new CreateMediaCallable(ugeePoints, type, filename, callBack)) {
+            @Override
+            protected void done() {
+                super.done();
+                Log.i(TAG, "FutureTask is done.");
             }
-            return;
-        }
-        if (FileUtils.isFileExist(realPath)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_TWO);
-            }
-            return;
-        }
-        String path = realPath.substring(0, realPath.lastIndexOf(File.separator) + 1);
-        String name = realPath.substring(realPath.lastIndexOf(File.separator) + 1);
-        if (!FileUtils.makeDirs(path)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_THREE);
-            }
-            return;
-        }
-        initCanvas();
-        drawPath(mUgeePoints);
-        saveImage(mBitmap, path, name, Bitmap.CompressFormat.JPEG, 100);
+        };
+        mExecutors.execute(mFutureTask);
     }
 
-    @Override
-    public void createVideoWithPoints(String filename, int revokeTimes, IPathCallBack callBack) {
-        this.mIsGetImage = false;
-        this.pointsPerFrame = revokeTimes;
-        this.mCallBack = callBack;
-        String realPath = mRootPath + filename;
-        if (TextUtils.isEmpty(realPath)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_FIVE);
-            }
+    private void optimizePoints(List<UgeePoint> ugeePoints, String type, String fileName, IPathCallBack callBack) {
+        if (null == ugeePoints || ugeePoints.size() <= 0) {
             return;
         }
-        if (FileUtils.isFileExist(realPath)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_TWO);
+        mUgeePoints = new ArrayList<>();
+        UgeePenOptimizeClass ugeePenOptimizeClass = new UgeePenOptimizeClass(new OnPenCallBack() {
+            @Override
+            public void onPenOptimizeDate(UgeePoint ugeePoint) {
+                mUgeePoints.add(ugeePoint);
             }
-            return;
-        }
-        String path = realPath.substring(0, realPath.lastIndexOf(File.separator) + 1);
-        if (!FileUtils.makeDirs(path)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_THREE);
+
+            @Override
+            public void onCompleteDate(boolean b) {
+                if (!b) {
+                    return;
+                }
+                //轨迹点集优化完成
+                switch (type) {
+                    case Type.IMAGE:
+                        createImageWithPoints(fileName, callBack);
+                        break;
+                    case Type.VIDEO:
+                        createVideoWithPoints(fileName, callBack);
+                        break;
+                    case Type.PDF:
+                        createPDFWithPoints(fileName, callBack);
+                        break;
+                }
             }
-            return;
-        }
-        initCanvas();
-        imageToVideo(realPath);
-        drawPath(mUgeePoints);
+        });
+        ugeePenOptimizeClass.customListPoint(ugeePoints);
     }
 
-    @Override
-    public void createPDFWithPoints(String filename, IPathCallBack callBack) {
-        this.mIsGetImage = true;
-        this.mCallBack = callBack;
-        String realPath = mRootPath + filename;
-        if (TextUtils.isEmpty(realPath)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_FIVE);
-            }
+    private void setConfig(Map<String, Object> params) {
+        if (null == params || params.size() <= 0) {
             return;
         }
-        if (FileUtils.isFileExist(realPath)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_TWO);
-            }
-            return;
+        mBackgroundColor = params.containsKey(ParamsKey.BACKGROUND_COLOR) ?
+                Color.parseColor((String) params.get(ParamsKey.BACKGROUND_COLOR)) : Color.WHITE;
+        mLineColor = params.containsKey(ParamsKey.LINE_COLOR) ?
+                Color.parseColor((String) params.get(ParamsKey.LINE_COLOR)) : Color.BLACK;
+        mLineWidth = params.containsKey(ParamsKey.LINE_WIDTH) ?
+                new Double((Double) params.get(ParamsKey.LINE_WIDTH)).floatValue() : (float) 1.5;
+        mLineWidth = mLineWidth * UIUtils.getDensity(mContext);
+        mScale = params.containsKey(ParamsKey.SCALE) ?
+                new Double((Double) params.get(ParamsKey.SCALE)).floatValue() : (float) 0.01;
+        mScale = mScale * UIUtils.getDensity(mContext);
+        maxPressure = params.containsKey(ParamsKey.MAX_PRESSURE) ?
+                new Double((Double) params.get(ParamsKey.MAX_PRESSURE)).floatValue() : 0x07FF;
+        mPointsPerFrame = params.containsKey(ParamsKey.POINTS_PERFRAME) ?
+                new Double((Double) params.get(ParamsKey.POINTS_PERFRAME)).floatValue() : 20;
+        mFps = params.containsKey(ParamsKey.FPS) ?
+                new Double((Double) params.get(ParamsKey.FPS)).floatValue() : 10;
+        Map<String, Object> deviceSize = params.containsKey(ParamsKey.SIZE) ?
+                (Map<String, Object>) params.get(ParamsKey.SIZE) : null;
+        if (null != deviceSize && deviceSize.size() > 0) {
+            mWidth = deviceSize.containsKey(ParamsKey.WIDTH) ?
+                    new Double((Double) deviceSize.get(ParamsKey.WIDTH)).floatValue() : 0x5078;
+            mHeight = deviceSize.containsKey(ParamsKey.HEIGHT) ?
+                    new Double((Double) deviceSize.get(ParamsKey.HEIGHT)).floatValue() : 0x6B08;
         }
-        String path = realPath.substring(0, realPath.lastIndexOf(File.separator) + 1);
-        if (!FileUtils.makeDirs(path)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_THREE);
-            }
-            return;
-        }
-        initCanvas();
-        drawPath(mUgeePoints);
-        imageToPdf(mBitmap, realPath);
     }
 
     @Override
@@ -226,6 +205,91 @@ public class JQDPainter implements IBasePathDerive {
         textToPdf(text, realPath, params);
     }
 
+    private void createImageWithPoints(String filename, IPathCallBack callBack) {
+        this.mIsGetImage = true;
+        this.mCallBack = callBack;
+        String realPath = mRootPath + filename;
+        if (TextUtils.isEmpty(realPath)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_FIVE);
+            }
+            return;
+        }
+        if (FileUtils.isFileExist(realPath)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_TWO);
+            }
+            return;
+        }
+        String path = realPath.substring(0, realPath.lastIndexOf(File.separator) + 1);
+        String name = realPath.substring(realPath.lastIndexOf(File.separator) + 1);
+        if (!FileUtils.makeDirs(path)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_THREE);
+            }
+            return;
+        }
+        initCanvas();
+        drawPath(mUgeePoints);
+        saveImage(mBitmap, path, name, Bitmap.CompressFormat.JPEG, 100);
+    }
+
+    private void createVideoWithPoints(String filename, IPathCallBack callBack) {
+        this.mIsGetImage = false;
+        this.mCallBack = callBack;
+        String realPath = mRootPath + filename;
+        if (TextUtils.isEmpty(realPath)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_FIVE);
+            }
+            return;
+        }
+        if (FileUtils.isFileExist(realPath)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_TWO);
+            }
+            return;
+        }
+        String path = realPath.substring(0, realPath.lastIndexOf(File.separator) + 1);
+        if (!FileUtils.makeDirs(path)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_THREE);
+            }
+            return;
+        }
+        initCanvas();
+        imageToVideo(realPath);
+        drawPath(mUgeePoints);
+    }
+
+    private void createPDFWithPoints(String filename, IPathCallBack callBack) {
+        this.mIsGetImage = true;
+        this.mCallBack = callBack;
+        String realPath = mRootPath + filename;
+        if (TextUtils.isEmpty(realPath)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_FIVE);
+            }
+            return;
+        }
+        if (FileUtils.isFileExist(realPath)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_TWO);
+            }
+            return;
+        }
+        String path = realPath.substring(0, realPath.lastIndexOf(File.separator) + 1);
+        if (!FileUtils.makeDirs(path)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_THREE);
+            }
+            return;
+        }
+        initCanvas();
+        drawPath(mUgeePoints);
+        imageToPdf(mBitmap, realPath);
+    }
+
     private void drawPath(List<UgeePoint> ugeePoints) {
         if (null == ugeePoints || ugeePoints.size() <= 0) {
             if (null != mCallBack) {
@@ -245,23 +309,23 @@ public class JQDPainter implements IBasePathDerive {
 
             if (ugeePoint.state <= 0 && nextUgeePoint.state > 0) {
                 if (null != mPath) {
-                    mPath.moveTo(ugeePoint.x * scale, ugeePoint.y * scale);
+                    mPath.moveTo(ugeePoint.x * mScale, ugeePoint.y * mScale);
                 }
             }
 
             if (ugeePoint.state > 0 && nextUgeePoint.state > 0) {
                 if (null != mPaint) {
-                    float width = lineWidth * calPressureScale(ugeePoint.pressure);
+                    float width = mLineWidth * calPressureScale(ugeePoint.pressure);
                     mPaint.setStrokeWidth(width);
-                    mPaint.setColor(lineColor);
+                    mPaint.setColor((int) mLineColor);
                 }
                 if (null != mPath) {
-                    mPath.quadTo(ugeePoint.x * scale, ugeePoint.y * scale, nextUgeePoint.x * scale, nextUgeePoint.y * scale);
+                    mPath.quadTo(ugeePoint.x * mScale, ugeePoint.y * mScale, nextUgeePoint.x * mScale, nextUgeePoint.y * mScale);
                 }
-                drawPath(new float[]{ugeePoint.x * scale, ugeePoint.y * scale, nextUgeePoint.x * scale, nextUgeePoint.y * scale}, mCanvas, mPaint);
+                drawPath(new float[]{ugeePoint.x * mScale, ugeePoint.y * mScale, nextUgeePoint.x * mScale, nextUgeePoint.y * mScale}, mCanvas, mPaint);
                 if (!mIsGetImage) {
                     num++;
-                    if (num >= pointsPerFrame) {
+                    if (num >= mPointsPerFrame) {
                         Bitmap bitmap = mBitmap.copy(Bitmap.Config.ARGB_4444, true);
                         mBitmapProvider.setQueue(bitmap);
                         num = 0;
@@ -329,7 +393,7 @@ public class JQDPainter implements IBasePathDerive {
      * @param fileName
      */
     private void imageToVideo(String fileName) {
-        AvcExecuteAsyncTask.execute(mBitmapProvider, fps,
+        AvcExecuteAsyncTask.execute(mBitmapProvider, (int) mFps,
                 new CreatorExecuteResponseHander() {
                     @Override
                     public void onSuccess(Object message) {
@@ -376,9 +440,15 @@ public class JQDPainter implements IBasePathDerive {
         if (null == bitmap || TextUtils.isEmpty(filename)) {
             return;
         }
-        PdfImpl.Builder builder = new PdfImpl.Builder(filename, new int[]{bitmap.getWidth(), bitmap.getHeight()});
+
+        Map<String, Object> pageSize = new HashMap<>();
+        pageSize.put(PdfImpl.ParamsKey.WIDTH, Double.valueOf(bitmap.getWidth()));
+        pageSize.put(PdfImpl.ParamsKey.HEIGHT, Double.valueOf(bitmap.getHeight()));
+        Map<String, Object> params = new HashMap<>();
+        params.put(PdfImpl.ParamsKey.PAGE_SIZE, pageSize);
+        PdfImpl.Builder builder = new PdfImpl.Builder(filename, params);
         PdfImpl pdf = builder.build();
-        boolean result = pdf.init().addImageToPdf(bitmap).finishPage().save();
+        boolean result = pdf.init().addImageToPdf(bitmap).save();
         if (null == mCallBack) {
             return;
         }
@@ -393,28 +463,9 @@ public class JQDPainter implements IBasePathDerive {
         if (TextUtils.isEmpty(text) || TextUtils.isEmpty(filename)) {
             return;
         }
-        int size = 16;
-        int color = Color.BLACK;
-        Typeface typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL);
-        int[] pageSize = {UIUtils.getDisplayWidthPixels(mContext), UIUtils.getDisplayHeightPixels(mContext)};
-        int[] margins = {20, 20, 20, 20};
-        if (null != params) {
-            size = (int) params.get(PdfImpl.ParamsKey.TEXT_SIZE);
-            color = (int) params.get(PdfImpl.ParamsKey.TEXT_COLOR);
-            typeface = (Typeface) params.get(PdfImpl.ParamsKey.TYPEFACE);
-            pageSize = new int[]{(int) params.get(PdfImpl.ParamsKey.WIDTH), (int) params.get(PdfImpl.ParamsKey.HEIGHT)};
-            margins = new int[]{(int) params.get(PdfImpl.ParamsKey.MARGIN_HORIZONTAL)
-                    , (int) params.get(PdfImpl.ParamsKey.MARGIN_VERTICAL)
-                    , (int) params.get(PdfImpl.ParamsKey.MARGIN_HORIZONTAL)
-                    , (int) params.get(PdfImpl.ParamsKey.MARGIN_VERTICAL)};
-        }
-        PdfImpl.Builder builder = new PdfImpl.Builder(filename, pageSize)
-                .setTextSize(size)
-                .setColor(color)
-                .setTypeface(typeface)
-                .setMargins(margins);
+        PdfImpl.Builder builder = new PdfImpl.Builder(filename, params);
         PdfImpl pdf = builder.build();
-        boolean result = pdf.init().addTextToPdf(text).finishPage().save();
+        boolean result = pdf.init().addTextToPdf(text).save();
         if (null == mCallBack) {
             return;
         }
@@ -425,73 +476,11 @@ public class JQDPainter implements IBasePathDerive {
         }
     }
 
-    private int[] getSize() {
-        int width = (int) (scale * deviceWidth);
-        int height = (int) (scale * deviceHeight);
-        return new int[]{width, height};
-    }
-
     public void addPoints(List<UgeePoint> ugeePoints) {
         if (null != mUgeePoints && mUgeePoints.size() > 0) {
             mUgeePoints.clear();
         }
         mUgeePoints.addAll(ugeePoints);
-    }
-
-    public void setDeviceWidth(int width) {
-        this.deviceWidth = width;
-    }
-
-    public void setDeviceHeight(int height) {
-        this.deviceHeight = height;
-    }
-
-    public void setScale(Context context, float scale) {
-        this.scale = scale * UIUtils.getDensity(context);
-    }
-
-    public void setDevicePressure(int p) {
-        this.maxPressure = p;
-    }
-
-    public void setImageBgColor(int color) {
-        this.backgroundColor = color;
-    }
-
-    public void setPathWidth(int width) {
-        this.lineWidth = width;
-        if (null != mPaint) {
-            mPaint.setStrokeWidth(width);
-        }
-    }
-
-    public void setPathColor(int color) {
-        this.lineColor = color;
-        if (null != mPaint) {
-            mPaint.setColor(color);
-        }
-    }
-
-    public void setPathStyle(Paint.Style style) {
-        if (null != mPaint) {
-            mPaint.setStyle(style);
-        }
-    }
-
-    public void setPathAntiAlias(boolean antiAlias) {
-        if (null != mPaint) {
-            mPaint.setAntiAlias(antiAlias);
-        }
-    }
-
-    public void setPathStrokeCap(Paint.Cap cap) {
-        if (null != mPaint) {
-            mPaint.setStrokeCap(cap);
-        }
-    }
-
-    public void setFps(int fps) {
-        this.fps = fps;
     }
 
     public void destroy() {
@@ -508,10 +497,24 @@ public class JQDPainter implements IBasePathDerive {
         if (null != mCanvas) {
             mCanvas = null;
         }
+
     }
 
     private float calPressureScale(float p) {
         return p / maxPressure;
+    }
+
+    public interface ParamsKey {
+        String BACKGROUND_COLOR = "backgroundColor";
+        String LINE_COLOR = "lineColor";
+        String LINE_WIDTH = "lineWidth";
+        String SCALE = "scale";
+        String SIZE = "size";
+        String MAX_PRESSURE = "maxPressure";
+        String POINTS_PERFRAME = "pointsPerFrame";
+        String FPS = "fps";
+        String WIDTH = "width";
+        String HEIGHT = "height";
     }
 
     public interface Error {
@@ -526,6 +529,26 @@ public class JQDPainter implements IBasePathDerive {
         int ERROR_FOUR = BASE + 4;
         //文件路径名称为空
         int ERROR_FIVE = BASE + 5;
+    }
+
+    private class CreateMediaCallable implements Callable<String> {
+        private List<UgeePoint> ugeePoints;
+        private String type;
+        private String fileName;
+        private IPathCallBack callBack;
+
+        public CreateMediaCallable(List<UgeePoint> ugeePoints, String type, String fileName, IPathCallBack callBack) {
+            this.ugeePoints = ugeePoints;
+            this.type = type;
+            this.fileName = fileName;
+            this.callBack = callBack;
+        }
+
+        @Override
+        public String call() throws Exception {
+            optimizePoints(ugeePoints, type, fileName, callBack);
+            return null;
+        }
     }
 
 }

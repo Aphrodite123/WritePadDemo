@@ -4,19 +4,16 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.graphics.Color;
-import android.graphics.Typeface;
 import android.os.CountDownTimer;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.aphrodite.writepaddemo.R;
 import com.aphrodite.writepaddemo.config.AppConfig;
 import com.aphrodite.writepaddemo.model.Impl.JQDPainter;
-import com.aphrodite.writepaddemo.model.Impl.PdfImpl;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
 import com.aphrodite.writepaddemo.model.bean.PointBean;
 import com.aphrodite.writepaddemo.model.bean.PointsBean;
@@ -38,17 +35,13 @@ import java.util.List;
 import java.util.Map;
 
 import androidx.annotation.NonNull;
-import cn.ugee.mi.optimize.UgeePenOptimizeClass;
 import cn.ugee.mi.optimize.UgeePoint;
 
 public class MainActivity extends BaseActivity {
-    private LinearLayout mRoot;
+    private static final String TAG = MainActivity.class.getSimpleName();
+
     private JQDCanvas mJQDCanvas;
     private TextView mContent;
-
-    private static final String TAG = MainActivity.class.getSimpleName();
-    //生成图片点间隔数，默认：5
-    private static int DEFAULT_IMAGE_INTERVAL = 40;
 
     private String[] mPermissions = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
@@ -59,14 +52,39 @@ public class MainActivity extends BaseActivity {
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.CAMERA};
     private String mRootPath;
-    private PointsBean mPointsBean;
-    private UgeePenOptimizeClass mUgeePenOptimizeClass;
-    private Gson mGson;
 
     private JQDPainter mPathDerive;
-    private List<UgeePoint> uptimizedPoints = new ArrayList<>();
     private int mIndex = 0;
     private CountDownTimer mCountDownTimer;
+
+    private List<UgeePoint> mSourcePoints;
+
+    private String mConfig = "{\"backgroundColor\": \"white\", \"fps\": 4, \"lineColor\": " +
+            "\"black\", \"lineWidth\": 1.5, \"maxPressure\": 2047, \"pointsPerFrame\": 40, \"scale\": 0.01, \"size\": {\"height\": 27400, \"width\": 20600}}";
+    private String mPdfConfig = "{\"color\": \"#000000\", \"fontSize\": 10, \"marginHorizontal\": 20, \"marginVertical\": 20, \"pageSize\": {\"height\": 274, \"width\": 206}}";
+    private String mPdfText = "证券时报记者 谢忠翔\n" +
+            "随着A股上市银行半年报披露完毕，各银行上半年涉房贷款占比也逐一显现。\n" +
+            "证券时报记者梳理41家A股上市银行披露的涉房贷款比例数据后了解到，目前仍有11家银行的个人住房贷款占比超出监管要求，10家银行的房地产业贷款超出“红线”。另一方面，上市银行涉房贷款的不良贷款率也明显上升，资产质量承压。\n" +
+            "同时，在A股上市银行中，多数满足监管要求，但不少银行仍选择对房地产企业贷款进一步压降；而个人住房贷款方面则有所分化，部分银行忙着降比例，也有部分银行个人房贷占比明显上升。\n" +
+            "分析人士表示，国内结构性房地产调控趋严的情况下，银行积极落实房贷“两道红线”监管，并且对房企信贷风险进一步防范。同时，仍有部分银行存在较大整改压力，由于监管规定了2~4年的过渡期，预计绝大部分银行能够完成整改。\n" +
+            "多家银行涉房贷踩红线\n" +
+            "9月3日，央行发布的《中国金融稳定报告（2021）》称，当前，房地产贷款集中度管理制度已进入常态化实施阶段。\n" +
+            "去年末，央行、银保监会宣布实施房地产贷款集中度管理制度，对银行业金融机构设置房地产贷款占比和个人住房贷款占比“两道红线”，并对不同体量的银行设置了五档标准。\n" +
+            "在个人住房贷款占比方面，五个档次的占比上限分别为32.5%、20%、17.5%、12.5%、7.5%。\n" +
+            "证券时报记者注意到，相较去年末，仍有多家银行的涉房贷款比例超出监管规定的“两道红线”。在个人住房贷款占比方面，建设银行、邮储银行、兴业银行、招商银行等11家银行超出监管上限，但总体均较去年末有不同幅度的压降。\n" +
+            "例如，建设银行的个人房贷占比从年初的34.73%下降至33.72%；邮储银行较年初下降0.65个百分点；兴业银行25.94%的数据也较年初下降了0.61个百分点，不过仍比监管要求高出5.94个百分点；招商银行的这一数据为24.71%，较红线要求高出4.71个百分点。\n" +
+            "在房地产业贷款占比方面，监管对五个档次给出的上限标准分别为40%、27.5%、22.5%、17.5%、12.5%。据A股上市银行的半年报，目前仍有10家银行处于“踩线”状态。\n" +
+            "与个人房贷占比超标类似的是，兴业银行、招商银行和成都银行等10家机构，均相对较多地超出监管标准，兴业银行、招行、成都银行的房地产贷款占比分别为34.61%、32.22%、29.44%，分别超出7.11、4.72、6.94个百分点，在满足监管要求的整改上存在相对较大的压力。\n" +
+            "兴业银行在半年报中称，“公司将主动适应更加严格和精细的房地产调控政策，按照监管部门的房地产贷款集中度管理方案稳健投放房地产信贷业务。”招行也在半年报中表示，将继续加强房地产贷款集中度管理，推动房地产贷款占比稳步下降，预计房地产贷款集中度管理政策的总体影响可控。\n" +
+            "对于仍有不少银行涉房贷款超标的原因，光大银行金融业分析师周茂华认为，一是历史存量较大；二是个人按揭房贷在银行眼里仍是“优质资产”，同时由于担忧客户流失，部分银行压降积极性不高。\n" +
+            "“从目前触及监管‘红线’的银行看，占比超限程度不严重，同时国内强化监管，预计过渡期内绝大多数银行还是能完成整改的。”周茂华称。\n" +
+            "房地产贷款比例“瘦身”\n" +
+            "为符合监管要求，今年上半年，不少银行纷纷压降涉房贷款比例。证券时报记者梳理A股41家上市银行的半年报发现，除上海农商行、紫金银行未披露外，共有27家银行的房地产贷款较去年末有所下降。\n" +
+            "其中，六大国有银行的房地产贷款比例均较年初有所下降，中国银行和建设银行分别降低了1.34、1.01个百分点。城商行中，压降幅度较大的分别为成都银行、杭州银行、青岛银行等，分别较年初下降了5.22、2.38、1.47个百分点。\n" +
+            "不过，在个人住房贷款这项数据上，由于不同上市银行距离监管上限的空间并不一致，一些接近监管红线的银行忙着压降个人住房贷款，而另一些个人房贷占比低的银行却在加大对个人房贷的投放。\n" +
+            "数据显示，有20家上市银行的这一指标有所压降，另外19家银行的个人贷款占比较年初上升了0.03~7.06个百分点。其中，杭州银行目前个人住房贷款占比达14.32%，较年初的7.26%提升了7.06个百分点，在A股银行中上升最快。\n" +
+            "不过，也有一些银行虽然个人住房贷款占比大幅低于同业，但目前仍选择“按兵不动”。例如，平安银行和浙商银行的这一占比仅分别为9.01%、7.03%，较年初分别提升了0.03、0.18个百分点。\n" +
+            "平安银行副行长郭世邦在半年报业绩发布会上表示，“我们的两个指标距离监管要求还很远，但这并不代表我们就有机会，并不是说马上就能投放很多房地产贷款，还是要按照监管要求来。”无独有偶，各大银行召开的业绩发布中，不少银行高层表示将继续按监管要求，严格控制好房地产贷款的规模和占比。";
 
     @Override
     protected int getViewId() {
@@ -75,7 +93,6 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void initView() {
-        mRoot = findViewById(R.id.root);
         mJQDCanvas = findViewById(R.id.pen);
         mContent = findViewById(R.id.content);
     }
@@ -86,37 +103,33 @@ public class MainActivity extends BaseActivity {
 
     @Override
     protected void initData() {
+        //读取原始数据
+        mSourcePoints = new ArrayList<>();
+        mSourcePoints.addAll(processPoints());
+
         //路径：/storage/emulated/0/Android/data/com.aphrodite.writepaddemo/files/，注：米家插件则为沙盒目录
-        mRootPath = PathUtils.getExternalFileDir(this) + "/202103051536/";
-        mGson = new Gson();
+        mRootPath = PathUtils.getExternalFileDir(this) + "/20210914/";
         //JQDCanvas设置
         mJQDCanvas.init(mRootPath);
         mJQDCanvas.setScale(this, 0.01f);
         mJQDCanvas.setLineWidth((float) 4.0);
         //文件设置
-        if (!hasPermission(mPermissions)) {
-            requestPermission(mPermissions, AppConfig.PermissionType.CAMERA_PERMISSION);
+        if (hasPermission(mPermissions)) {
+            createFile();
+        } else {
+            requestPermission(mPermissions, AppConfig.PermissionType.WRITE_EXTERNAL_PERMISSION);
         }
-        createFile();
         //JQDPainter设置
-        mPathDerive = JQDPainter.getInstance(this);
+        mPathDerive = new JQDPainter(this);
         mPathDerive.init(mRootPath);
-        mPathDerive.setScale(this, 0.01f);
-        mPathDerive.setImageBgColor(Color.WHITE);
-        mPathDerive.setPathColor(Color.BLACK);
-        mPathDerive.setPathWidth(4);
-        mPathDerive.setFps(10);
-        //点优化
-        optimizePoints();
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
-            case AppConfig.PermissionType.CAMERA_PERMISSION:
+            case AppConfig.PermissionType.WRITE_EXTERNAL_PERMISSION:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     createFile();
-                    optimizePoints();
                 }
                 break;
         }
@@ -137,39 +150,10 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    private void optimizePoints() {
-        String line = readPoints();
-        if (TextUtils.isEmpty(line)) {
-            return;
-        }
-        mPointsBean = mGson.fromJson(line, PointsBean.class);
-        List<UgeePoint> elements = processPoints();
-        Log.i(TAG, "点长度：" + elements.size());
-        mUgeePenOptimizeClass = new UgeePenOptimizeClass(new cn.ugee.mi.optimize.OnPenCallBack() {
-            @Override
-            public void onPenOptimizeDate(UgeePoint ugeePoint) {
-                if (null == ugeePoint) {
-                    return;
-                }
-                uptimizedPoints.add(ugeePoint);
-            }
-
-            @Override
-            public void onCompleteDate(boolean b) {
-                if (b) {
-                    mPathDerive.addPoints(uptimizedPoints);
-                }
-            }
-        });
-        //轨迹数据集合优化
-        mUgeePenOptimizeClass.customListPoint(elements);
-    }
-
     private List<UgeePoint> processPoints() {
-        if (null == mPointsBean) {
-            return null;
-        }
-        List<PointBean> pointBeans = mPointsBean.getData();
+        Gson gson = new Gson();
+        PointsBean pointsBean = gson.fromJson(readPoints(), PointsBean.class);
+        List<PointBean> pointBeans = pointsBean.getData();
         if (null == pointBeans || pointBeans.size() <= 0) {
             return null;
         }
@@ -241,13 +225,13 @@ public class MainActivity extends BaseActivity {
                 mCountDownTimer = new CountDownTimer(30 * 1000, 1) {
                     @Override
                     public void onTick(long millisUntilFinished) {
-                        if (mIndex <= uptimizedPoints.size() - 5) {
-                            mJQDCanvas.displayPoints(uptimizedPoints.subList(mIndex, mIndex + 5));
+                        if (mIndex <= mSourcePoints.size() - 5) {
+                            mJQDCanvas.displayPoints(mSourcePoints.subList(mIndex, mIndex + 5));
                             mIndex += 5;
                         } else {
-                            if (mIndex < uptimizedPoints.size()) {
-                                mJQDCanvas.displayPoints(uptimizedPoints.subList(mIndex, uptimizedPoints.size()));
-                                mIndex = uptimizedPoints.size();
+                            if (mIndex < mSourcePoints.size()) {
+                                mJQDCanvas.displayPoints(mSourcePoints.subList(mIndex, mSourcePoints.size()));
+                                mIndex = mSourcePoints.size();
                             }
                         }
                     }
@@ -301,11 +285,22 @@ public class MainActivity extends BaseActivity {
         mJQDCanvas.clear();
     }
 
+    private Map<String, Object> getParams(String config) {
+        if (TextUtils.isEmpty(config)) {
+            return null;
+        }
+        Gson gson = new Gson();
+        Map<String, Object> hashMap = new HashMap<>();
+        hashMap = gson.fromJson(config, hashMap.getClass());
+        return hashMap;
+    }
+
     /**
      * 路径转图片
      */
     public void pathToImage(View pathToImage) {
-        mPathDerive.createImageWithPoints("202103051538.png", new IPathCallBack() {
+        String fileName = System.currentTimeMillis() + ".png";
+        mPathDerive.createMediaWithPoints(mSourcePoints, JQDPainter.Type.IMAGE, fileName, getParams(mConfig), new IPathCallBack() {
             @Override
             public void success(String path) {
                 Log.i(TAG, "Path of picture: " + path);
@@ -325,8 +320,8 @@ public class MainActivity extends BaseActivity {
      * 路径转视频
      */
     public void pathToVideo(View pathToVideo) {
-        Log.i(TAG, "Start path to video.");
-        mPathDerive.createVideoWithPoints("202103051538.mp4", DEFAULT_IMAGE_INTERVAL, new IPathCallBack() {
+        String fileName = System.currentTimeMillis() + ".mp4";
+        mPathDerive.createMediaWithPoints(mSourcePoints, JQDPainter.Type.VIDEO, fileName, getParams(mConfig), new IPathCallBack() {
             @Override
             public void success(String path) {
                 Log.i(TAG, "Path of video: " + path);
@@ -346,7 +341,8 @@ public class MainActivity extends BaseActivity {
      * 路径转PDF
      */
     public void pathToPdf(View pathToPdf) {
-        mPathDerive.createPDFWithPoints("202103051538.pdf", new IPathCallBack() {
+        String fileName = System.currentTimeMillis() + ".pdf";
+        mPathDerive.createMediaWithPoints(mSourcePoints, JQDPainter.Type.PDF, fileName, getParams(mConfig), new IPathCallBack() {
             @Override
             public void success(String path) {
                 Log.i(TAG, "Path of pdf: " + path);
@@ -366,58 +362,20 @@ public class MainActivity extends BaseActivity {
      * Text转PDF
      */
     public void textToPdf(View textToPdf) {
-        Map<String, Object> map = new HashMap<>();
-        Typeface typeface = Typeface.create(Typeface.DEFAULT, Typeface.NORMAL);
-        map.put(PdfImpl.ParamsKey.TEXT_SIZE, 10);
-        map.put(PdfImpl.ParamsKey.TEXT_COLOR, Color.BLACK);
-        map.put(PdfImpl.ParamsKey.TYPEFACE, typeface);
-        map.put(PdfImpl.ParamsKey.WIDTH, 320);
-        map.put(PdfImpl.ParamsKey.HEIGHT, 2000);
-        map.put(PdfImpl.ParamsKey.MARGIN_HORIZONTAL, 20);
-        map.put(PdfImpl.ParamsKey.MARGIN_VERTICAL, 20);
-        String text = "Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 " +
-                "Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello " +
-                "阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加 Hello 阿拉斯加基本概念\n" +
-                "HTTP（HyperText Transfer Protocol：超文本传输协议）是一种用于分布式、协作式和超媒体信息系统的应用层协议。 简单来说就是一种发布和接收 HTML 页面的方法，被用于在 Web 浏览器和网站服务器之间传递信息。\n" +
-                "\n" +
-                "HTTP 默认工作在 TCP 协议 80 端口，用户访问网站 http:// 打头的都是标准 HTTP 服务。\n" +
-                "\n" +
-                "HTTP 协议以明文方式发送内容，不提供任何方式的数据加密，如果攻击者截取了Web浏览器和网站服务器之间的传输报文，就可以直接读懂其中的信息，因此，HTTP协议不适合传输一些敏感信息，比如：信用卡号、密码等支付信息。\n" +
-                "\n" +
-                "HTTPS（Hypertext Transfer Protocol Secure：超文本传输安全协议）是一种透过计算机网络进行安全通信的传输协议。HTTPS 经由 HTTP 进行通信，但利用 SSL/TLS 来加密数据包。HTTPS 开发的主要目的，是提供对网站服务器的身份认证，保护交换数据的隐私与完整性。\n" +
-                "\n" +
-                "HTTPS 默认工作在 TCP 协议443端口，它的工作流程一般如以下方式：\n" +
-                "\n" +
-                "1、TCP 三次同步握手\n" +
-                "2、客户端验证服务器数字证书\n" +
-                "3、DH 算法协商对称加密算法的密钥、hash 算法的密钥\n" +
-                "4、SSL 安全加密隧道协商完成\n" +
-                "5、网页以加密的方式传输，用协商的对称加密算法和密钥加密，保证数据机密性；用协商的hash算法进行数据完整性保护，保证数据不被篡改。\n" +
-                "截至 2018 年 6 月，Alexa 排名前 100 万的网站中有 34.6% 使用 HTTPS 作为默认值，互联网 141387 个最受欢迎网站的 43.1% 具有安全实施的 HTTPS，以及 45% 的页面加载（透过Firefox纪录）使用HTTPS。2017 年3 月，中国注册域名总数的 0.11％使用 HTTPS。\n" +
-                "\n" +
-                "根据 Mozilla 统计，自 2017 年 1 月以来，超过一半的网站流量被加密。\n" +
-                "\n" +
-                "HTTP 与 HTTPS 区别\n" +
-                "HTTP 明文传输，数据都是未加密的，安全性较差，HTTPS（SSL+HTTP） 数据传输过程是加密的，安全性较好。\n" +
-                "使用 HTTPS 协议需要到 CA（Certificate Authority，数字证书认证机构） 申请证书，一般免费证书较少，因而需要一定费用。证书颁发机构如：Symantec、Comodo、GoDaddy 和 GlobalSign 等。\n" +
-                "HTTP 页面响应速度比 HTTPS 快，主要是因为 HTTP 使用 TCP 三次握手建立连接，客户端和服务器需要交换 3 个包，而 HTTPS除了 TCP 的三个包，还要加上 ssl 握手需要的 9 个包，所以一共是 12 个包。\n" +
-                "http 和 https 使用的是完全不同的连接方式，用的端口也不一样，前者是 80，后者是 443。\n" +
-                "HTTPS 其实就是建构在 SSL/TLS 之上的 HTTP 协议，所以，要比较 HTTPS 比 HTTP 要更耗费服务器资源。20210903";
-        mPathDerive.createPDFWithText(text, "202103051538.pdf", map,
-                new IPathCallBack() {
-                    @Override
-                    public void success(String path) {
-                        Log.i(TAG, "Path of pdf: " + path);
-                        if (null != mContent) {
-                            mContent.setText("Pdf路径为：" + path);
-                        }
-                    }
+        mPathDerive.createPDFWithText(mPdfText, "202103051538.pdf", getParams(mPdfConfig), new IPathCallBack() {
+            @Override
+            public void success(String path) {
+                Log.i(TAG, "Path of pdf: " + path);
+                if (null != mContent) {
+                    mContent.setText("Pdf路径为：" + path);
+                }
+            }
 
-                    @Override
-                    public void failed(int code) {
-                        Log.e(TAG, "Create pdf failed." + code);
-                    }
-                });
+            @Override
+            public void failed(int code) {
+                Log.e(TAG, "Create pdf failed." + code);
+            }
+        });
     }
 
     /**

@@ -8,10 +8,10 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 import com.aphrodite.writepaddemo.model.Impl.JQDPainter;
+import com.aphrodite.writepaddemo.model.api.IBasePathDerive;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
 import com.aphrodite.writepaddemo.utils.BitmapUtils;
 import com.aphrodite.writepaddemo.utils.FileUtils;
@@ -19,10 +19,13 @@ import com.aphrodite.writepaddemo.utils.UIUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 import androidx.annotation.Nullable;
+import cn.ugee.mi.optimize.OnPenCallBack;
+import cn.ugee.mi.optimize.UgeePenOptimizeClass;
 import cn.ugee.mi.optimize.UgeePoint;
 
 /**
@@ -58,6 +61,9 @@ public class JQDCanvas extends View {
     //可撤销次数，默认为：10
     private int revokeTimes = 10;
     private LinkedList<Bitmap> mCacheBitmaps;
+
+    private UgeePenOptimizeClass mUgeePenOptimizeClass;
+    private List<UgeePoint> mUgeePoints;
 
     public JQDCanvas(Context context) {
         this(context, null);
@@ -134,14 +140,42 @@ public class JQDCanvas extends View {
             return;
         }
         initCanvas();
-        if (null != mUgeePoint) {
-            ugeePoints.add(0, mUgeePoint);
+        optimizePoints(ugeePoints);
+    }
+
+    private void optimizePoints(List<UgeePoint> ugeePoints) {
+        if (null == ugeePoints || ugeePoints.size() <= 0) {
+            return;
         }
-        for (int i = 0; i < ugeePoints.size() - 1; i++) {
-            drawPath(ugeePoints.get(i), ugeePoints.get(i + 1));
+        if (null == mUgeePoints) {
+            mUgeePoints = new ArrayList<>();
+        } else {
+            mUgeePoints.clear();
         }
-        mUgeePoint = ugeePoints.get(ugeePoints.size() - 1);
-        invalidate();
+        if (null == mUgeePenOptimizeClass) {
+            mUgeePenOptimizeClass = new UgeePenOptimizeClass(new OnPenCallBack() {
+                @Override
+                public void onPenOptimizeDate(UgeePoint ugeePoint) {
+                    mUgeePoints.add(ugeePoint);
+                }
+
+                @Override
+                public void onCompleteDate(boolean b) {
+                    if (!b) {
+                        return;
+                    }
+                    if (null != mUgeePoint) {
+                        ugeePoints.add(0, mUgeePoint);
+                    }
+                    for (int i = 0; i < ugeePoints.size() - 1; i++) {
+                        drawPath(ugeePoints.get(i), ugeePoints.get(i + 1));
+                    }
+                    mUgeePoint = ugeePoints.get(ugeePoints.size() - 1);
+                    invalidate();
+                }
+            });
+        }
+        mUgeePenOptimizeClass.customListPoint(ugeePoints);
     }
 
     private void drawPath(UgeePoint ugeePoint, UgeePoint nextUgeePoint) {
