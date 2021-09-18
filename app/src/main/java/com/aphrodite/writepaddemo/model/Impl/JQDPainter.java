@@ -42,8 +42,8 @@ public class JQDPainter implements IBasePathDerive {
     private Context mContext;
     private boolean mIsGetImage = true;
 
-    private float mBackgroundColor;
-    private float mLineColor;
+    private float mBackgroundColor = Color.WHITE;
+    private float mLineColor = Color.BLACK;
     private float mLineWidth;
     //缩放比，默认：0.03 注意该值不可过大，否则很容易出现OOM
     private float mScale = (float) 0.01;
@@ -70,10 +70,7 @@ public class JQDPainter implements IBasePathDerive {
 
     public JQDPainter(Context context) {
         this.mContext = context;
-        this.mBackgroundColor = Color.WHITE;
         this.mLineWidth = UIUtils.dip2px(context, 10);
-        this.mLineColor = Color.BLACK;
-        this.mFps = 10;
         initData();
     }
 
@@ -106,14 +103,34 @@ public class JQDPainter implements IBasePathDerive {
     public void createMediaWithPoints(List<UgeePoint> ugeePoints, String type, String filename, Map<String, Object> params, IPathCallBack callBack) {
         setConfig(params);
         mExecutors = Executors.newSingleThreadExecutor();
-        mFutureTask = new FutureTask(new CreateMediaCallable(ugeePoints, type, filename, callBack)) {
-            @Override
-            protected void done() {
-                super.done();
-                Log.i(TAG, "FutureTask is done.");
-            }
-        };
+        mFutureTask = new FutureTask(new CreateMediaCallable(ugeePoints, type, filename, callBack));
         mExecutors.execute(mFutureTask);
+    }
+
+    @Override
+    public void createPDFWithText(String text, String filename, Map<String, Object> params, IPathCallBack callBack) {
+        this.mCallBack = callBack;
+        String realPath = mRootPath + filename;
+        if (TextUtils.isEmpty(realPath)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_FIVE);
+            }
+            return;
+        }
+        if (FileUtils.isFileExist(realPath)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_TWO);
+            }
+            return;
+        }
+        String path = realPath.substring(0, realPath.lastIndexOf(File.separator) + 1);
+        if (!FileUtils.makeDirs(path)) {
+            if (null != mCallBack) {
+                mCallBack.failed(Error.ERROR_THREE);
+            }
+            return;
+        }
+        textToPdf(text, realPath, params);
     }
 
     private void optimizePoints(List<UgeePoint> ugeePoints, String type, String fileName, IPathCallBack callBack) {
@@ -179,32 +196,6 @@ public class JQDPainter implements IBasePathDerive {
         }
     }
 
-    @Override
-    public void createPDFWithText(String text, String filename, Map<String, Object> params, IPathCallBack callBack) {
-        this.mCallBack = callBack;
-        String realPath = mRootPath + filename;
-        if (TextUtils.isEmpty(realPath)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_FIVE);
-            }
-            return;
-        }
-        if (FileUtils.isFileExist(realPath)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_TWO);
-            }
-            return;
-        }
-        String path = realPath.substring(0, realPath.lastIndexOf(File.separator) + 1);
-        if (!FileUtils.makeDirs(path)) {
-            if (null != mCallBack) {
-                mCallBack.failed(Error.ERROR_THREE);
-            }
-            return;
-        }
-        textToPdf(text, realPath, params);
-    }
-
     private void createImageWithPoints(String filename, IPathCallBack callBack) {
         this.mIsGetImage = true;
         this.mCallBack = callBack;
@@ -231,7 +222,7 @@ public class JQDPainter implements IBasePathDerive {
         }
         initCanvas();
         drawPath(mUgeePoints);
-        saveImage(mBitmap, path, name, Bitmap.CompressFormat.JPEG, 100);
+        saveImage(mBitmap, path, name, Bitmap.CompressFormat.PNG, 100);
     }
 
     private void createVideoWithPoints(String filename, IPathCallBack callBack) {
@@ -446,7 +437,7 @@ public class JQDPainter implements IBasePathDerive {
         pageSize.put(PdfImpl.ParamsKey.HEIGHT, Double.valueOf(bitmap.getHeight()));
         Map<String, Object> params = new HashMap<>();
         params.put(PdfImpl.ParamsKey.PAGE_SIZE, pageSize);
-        PdfImpl.Builder builder = new PdfImpl.Builder(filename, params);
+        PdfImpl.Builder builder = new PdfImpl.Builder(mContext, filename, params);
         PdfImpl pdf = builder.build();
         boolean result = pdf.init().addImageToPdf(bitmap).save();
         if (null == mCallBack) {
@@ -463,7 +454,7 @@ public class JQDPainter implements IBasePathDerive {
         if (TextUtils.isEmpty(text) || TextUtils.isEmpty(filename)) {
             return;
         }
-        PdfImpl.Builder builder = new PdfImpl.Builder(filename, params);
+        PdfImpl.Builder builder = new PdfImpl.Builder(mContext, filename, params);
         PdfImpl pdf = builder.build();
         boolean result = pdf.init().addTextToPdf(text).save();
         if (null == mCallBack) {

@@ -1,5 +1,6 @@
 package com.aphrodite.writepaddemo.model.Impl;
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -25,22 +26,24 @@ import java.util.Map;
  * 使用PdfDocument将Text/Image按要求转PDF
  */
 public class PdfImpl {
+    private Context mContext;
     private String mPath;
-    private int mWidth;
-    private int mHeight;
-    private int mColor;
-    private int mFontSize;
-    private int marginHorizontal;
-    private int marginVertical;
+    private float mWidth;
+    private float mHeight;
+    private float mColor;
+    private float mFontSize;
+    private float marginHorizontal;
+    private float marginVertical;
     private Typeface mTypeface;
 
     private PdfDocument mDocument;
     private PdfDocument.PageInfo mPageInfo;
-    private int mCanvasWidth;
-    private int mCanvasHeight;
+    private float mCanvasWidth;
+    private float mCanvasHeight;
     private TextPaint mTextPaint;
 
     public PdfImpl(Builder builder) {
+        this.mContext = builder.mContext;
         this.mPath = builder.mPath;
         this.mWidth = builder.mWidth;
         this.mHeight = builder.mHeight;
@@ -57,8 +60,8 @@ public class PdfImpl {
         // create a page description
         mCanvasWidth = mWidth - 2 * marginHorizontal;
         mCanvasHeight = mHeight - 2 * marginVertical;
-        Rect rect = new Rect(marginHorizontal, marginVertical, mWidth - marginHorizontal, mHeight - marginVertical);
-        PdfDocument.PageInfo.Builder builder = new PdfDocument.PageInfo.Builder(mWidth, mHeight, 1);
+        Rect rect = new Rect((int) marginHorizontal, (int) marginVertical, (int) (mWidth - marginHorizontal), (int) (mHeight - marginVertical));
+        PdfDocument.PageInfo.Builder builder = new PdfDocument.PageInfo.Builder((int) mWidth, (int) mHeight, 1);
         if (null != rect) {
             builder.setContentRect(rect);
         }
@@ -88,13 +91,13 @@ public class PdfImpl {
             return this;
         }
         mTextPaint = new TextPaint();
-        mTextPaint.setColor(mColor);
+        mTextPaint.setColor((int) mColor);
         mTextPaint.setTextSize(mFontSize);
         mTextPaint.setTextAlign(Paint.Align.LEFT);
         mTextPaint.setTypeface(mTypeface);
 
         StaticLayout staticLayout = new StaticLayout(content, 0, content.length(), mTextPaint,
-                mCanvasWidth, Layout.Alignment.ALIGN_NORMAL, 1.2f, 0.0f, false);
+                (int) mCanvasWidth, Layout.Alignment.ALIGN_NORMAL, 1.2f, 0.0f, false);
         int textHeight = staticLayout.getHeight();
 
         int currentHeight = 0;
@@ -112,12 +115,12 @@ public class PdfImpl {
         }
         PdfDocument.Page page = mDocument.startPage(mPageInfo);
         StaticLayout staticLayout = new StaticLayout(content, prePosition, nextPosition,
-                mTextPaint, mCanvasWidth, Layout.Alignment.ALIGN_NORMAL, 1.2f, 0.0f, false);
+                mTextPaint, (int) mCanvasWidth, Layout.Alignment.ALIGN_NORMAL, 1.2f, 0.0f, false);
         staticLayout.draw(page.getCanvas());
         finishPage(page);
     }
 
-    public PdfImpl finishPage(PdfDocument.Page page) {
+    private PdfImpl finishPage(PdfDocument.Page page) {
         if (null != mDocument) {
             // finish the page
             mDocument.finishPage(page);
@@ -155,15 +158,17 @@ public class PdfImpl {
     }
 
     public static class Builder {
+        private Context mContext;
         private String mPath;
-        private int mWidth;
-        private int mHeight;
-        private int mColor;
-        private int mFontSize;
-        private int marginHorizontal;
-        private int marginVertical;
+        private float mWidth;
+        private float mHeight;
+        private float mColor;
+        private float mFontSize;
+        private float marginHorizontal;
+        private float marginVertical;
 
-        public Builder(String path, Map<String, Object> params) {
+        public Builder(Context context, String path, Map<String, Object> params) {
+            this.mContext = context;
             this.mPath = path;
             this.initData(params);
         }
@@ -175,18 +180,22 @@ public class PdfImpl {
             mColor = params.containsKey(ParamsKey.COLOR) ?
                     Color.parseColor((String) params.get(ParamsKey.COLOR)) : Color.BLACK;
             mFontSize = params.containsKey(ParamsKey.FONT_SIZE) ?
-                    new Double((Double) params.get(ParamsKey.FONT_SIZE)).intValue() : 10;
+                    new Double((Double) params.get(ParamsKey.FONT_SIZE)).floatValue() : 10;
             marginHorizontal = params.containsKey(ParamsKey.MARGIN_HORIZONTAL) ?
-                    new Double((Double) params.get(ParamsKey.MARGIN_HORIZONTAL)).intValue() : 20;
+                    new Double((Double) params.get(ParamsKey.MARGIN_HORIZONTAL)).floatValue() : 20;
+            marginHorizontal = marginHorizontal * UIUtils.getDensity(mContext);
             marginVertical = params.containsKey(ParamsKey.MARGIN_VERTICAL) ?
-                    new Double((Double) params.get(ParamsKey.MARGIN_VERTICAL)).intValue() : 20;
+                    new Double((Double) params.get(ParamsKey.MARGIN_VERTICAL)).floatValue() : 20;
+            marginVertical = marginVertical * UIUtils.getDensity(mContext);
             Map<String, Object> pageSize = params.containsKey(ParamsKey.PAGE_SIZE) ?
                     (Map<String, Object>) params.get(ParamsKey.PAGE_SIZE) : null;
             if (null != pageSize && pageSize.size() > 0) {
                 mWidth = pageSize.containsKey(ParamsKey.WIDTH) ?
-                        new Double((Double) pageSize.get(ParamsKey.WIDTH)).intValue() : 0;
+                        new Double((Double) pageSize.get(ParamsKey.WIDTH)).floatValue() : UIUtils.getDisplayWidthPixels(mContext);
+                mWidth = mWidth * UIUtils.getDensity(mContext);
                 mHeight = pageSize.containsKey(ParamsKey.HEIGHT) ?
-                        new Double((Double) pageSize.get(ParamsKey.HEIGHT)).intValue() : 0;
+                        new Double((Double) pageSize.get(ParamsKey.HEIGHT)).floatValue() : UIUtils.getDisplayHeightPixels(mContext);
+                mHeight = mHeight * UIUtils.getDensity(mContext);
             }
         }
 

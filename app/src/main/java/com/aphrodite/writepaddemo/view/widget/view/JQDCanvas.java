@@ -11,7 +11,6 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import com.aphrodite.writepaddemo.model.Impl.JQDPainter;
-import com.aphrodite.writepaddemo.model.api.IBasePathDerive;
 import com.aphrodite.writepaddemo.model.api.IPathCallBack;
 import com.aphrodite.writepaddemo.utils.BitmapUtils;
 import com.aphrodite.writepaddemo.utils.FileUtils;
