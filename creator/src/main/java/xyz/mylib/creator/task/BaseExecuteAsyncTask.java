@@ -20,7 +20,6 @@ public abstract class BaseExecuteAsyncTask extends AsyncTask<Void, Integer, Stri
         this.mPath = path;
     }
 
-
     @Override
     protected void onPreExecute() {
         mHandler.onStart();

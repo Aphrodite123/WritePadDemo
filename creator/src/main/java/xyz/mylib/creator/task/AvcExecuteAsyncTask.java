@@ -1,6 +1,7 @@
 package xyz.mylib.creator.task;
 
 import android.graphics.Bitmap;
+import android.util.Log;
 
 import java.io.File;
 

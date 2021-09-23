@@ -297,7 +297,6 @@ public class JQDPainter implements IBasePathDerive {
             if (null == ugeePoint || null == nextUgeePoint) {
                 continue;
             }
-
             if (ugeePoint.state <= 0 && nextUgeePoint.state > 0) {
                 if (null != mPath) {
                     mPath.moveTo(ugeePoint.x * mScale, ugeePoint.y * mScale);
@@ -332,7 +331,7 @@ public class JQDPainter implements IBasePathDerive {
         }
 
         //校验是否添加最后一帧
-        if (!mIsGetImage && num > 0) {
+        if (!mIsGetImage) {
             Bitmap bitmap = mBitmap.copy(Bitmap.Config.ARGB_4444, true);
             mBitmapProvider.setQueue(bitmap);
         }
