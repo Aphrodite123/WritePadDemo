@@ -101,6 +101,7 @@ public class JQDCanvas extends View {
     private void initCanvas() {
         int width = (int) (mViewScale * deviceWidth);
         int height = (int) (mViewScale * deviceHeight);
+
         if (null == mViewBitmap) {
             mViewBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         }
@@ -402,7 +403,8 @@ public class JQDCanvas extends View {
     private float calScale() {
         float xScale = (float) mWidth / deviceWidth;
         float yScale = (float) mHeight / deviceHeight;
-        return Math.min(xScale, yScale);
+        float scale = Math.min(xScale, yScale);
+        return scale > 0 ? scale : mViewScale;
     }
 
     private float calPressureScale(float p) {
